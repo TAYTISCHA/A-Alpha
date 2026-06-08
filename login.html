@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>เข้าสู่ระบบ — ChemSheet KMUTT</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ─── Login-Specific Styles ─── */
+    body { display: flex; min-height: 100vh; overflow: hidden; }
+
+    .login-split {
+      display: flex; width: 100%; min-height: 100vh;
+    }
+
+    /* Left decorative panel */
+    .login-panel {
+      flex: 1; display: flex; flex-direction: column;
+      justify-content: space-between; padding: 3rem;
+      background: linear-gradient(145deg, #0F0F0E 0%, #1A1208 60%, #2A1800 100%);
+      position: relative; overflow: hidden;
+    }
+    .login-panel::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 60% at 70% 40%, rgba(255,122,0,0.18) 0%, transparent 70%),
+                  radial-gradient(ellipse 40% 40% at 20% 80%, rgba(255,77,0,0.1) 0%, transparent 60%);
+    }
+    .panel-grid {
+      position: absolute; inset: 0; overflow: hidden; opacity: 0.07;
+      background-image: linear-gradient(var(--border) 1px, transparent 1px),
+                        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    .panel-orb {
+      position: absolute;
+      border-radius: 50%; filter: blur(60px);
+      animation: orbFloat 8s ease-in-out infinite;
+    }
+    .panel-orb-1 { width: 300px; height: 300px; background: rgba(255,122,0,0.25); top: -80px; right: -60px; }
+    .panel-orb-2 { width: 200px; height: 200px; background: rgba(255,77,0,0.18); bottom: 100px; left: -60px; animation-delay: -3s; }
+    @keyframes orbFloat {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-20px) scale(1.05); }
+    }
+
+    .panel-logo {
+      display: flex; align-items: center; gap: 12px;
+      position: relative; z-index: 1;
+    }
+    .panel-logo-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 800; font-size: 1rem;
+      box-shadow: 0 8px 24px rgba(255,122,0,0.4);
+    }
+    .panel-logo-text .app-name { color: white; font-size: 1.125rem; font-weight: 700; }
+    .panel-logo-text .app-sub { color: rgba(255,255,255,0.4); font-size: 0.75rem; }
+
+    .panel-hero { position: relative; z-index: 1; }
+    .panel-hero h2 {
+      font-size: clamp(1.75rem, 3vw, 2.25rem); font-weight: 700;
+      color: white; line-height: 1.25; margin-bottom: 1rem;
+    }
+    .panel-hero h2 span { color: var(--accent); }
+    .panel-hero p { color: rgba(255,255,255,0.5); font-size: 0.9375rem; max-width: 320px; line-height: 1.7; }
+
+    .panel-features { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 0.75rem; }
+    .panel-feature {
+      display: flex; align-items: center; gap: 0.75rem;
+      color: rgba(255,255,255,0.6); font-size: 0.875rem;
+    }
+    .panel-feature-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); flex-shrink: 0;
+    }
+
+    /* Right form panel */
+    .login-form-panel {
+      width: 460px; flex-shrink: 0;
+      display: flex; flex-direction: column;
+      background: var(--bg); overflow-y: auto;
+    }
+    .login-form-inner {
+      flex: 1; padding: 3rem 2.5rem;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+
+    .form-header { margin-bottom: 2rem; }
+    .form-header h1 { font-size: 1.625rem; margin-bottom: 0.375rem; }
+    .form-header p { font-size: 0.9rem; color: var(--text-tertiary); }
+
+    /* Tab bar for login/register */
+    .auth-tabs { display: flex; background: var(--bg-secondary); border-radius: 10px; padding: 4px; margin-bottom: 1.75rem; }
+    .auth-tab {
+      flex: 1; padding: 0.5rem; text-align: center; border: none;
+      background: none; font-family: inherit; font-size: 0.875rem; font-weight: 500;
+      color: var(--text-tertiary); border-radius: 7px; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .auth-tab.active { background: var(--surface); color: var(--text-primary); box-shadow: var(--shadow-sm); }
+
+    .auth-form { display: flex; flex-direction: column; gap: 1rem; }
+    .auth-form.hidden { display: none; }
+
+    .input-group { position: relative; }
+    .input-prefix {
+      position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%);
+      color: var(--text-tertiary); font-size: 0.875rem; pointer-events: none;
+      display: flex; align-items: center; gap: 0.375rem;
+    }
+    .input-has-prefix { padding-left: 2.75rem !important; }
+    .input-toggle-pass {
+      position: absolute; right: 0.875rem; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; color: var(--text-tertiary);
+      transition: color var(--transition); padding: 4px;
+    }
+    .input-toggle-pass:hover { color: var(--text-primary); }
+
+    .submit-btn {
+      width: 100%; padding: 0.75rem; font-size: 1rem; font-weight: 600;
+      border-radius: var(--radius-md); margin-top: 0.5rem;
+    }
+
+    .error-msg {
+      display: flex; align-items: center; gap: 0.5rem;
+      background: rgba(229,62,62,0.08); border: 1px solid rgba(229,62,62,0.2);
+      border-radius: var(--radius-sm); padding: 0.625rem 0.875rem;
+      font-size: 0.8125rem; color: #E53E3E;
+    }
+    .error-msg.hidden { display: none; }
+
+    .lockout-msg {
+      display: flex; align-items: center; gap: 0.5rem;
+      background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+      border-radius: var(--radius-sm); padding: 0.625rem 0.875rem;
+      font-size: 0.8125rem; color: #D97706;
+    }
+    .lockout-msg.hidden { display: none; }
+
+    .form-footer {
+      margin-top: 2rem; padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      text-align: center; font-size: 0.8125rem; color: var(--text-tertiary);
+    }
+
+    .login-bottom-bar {
+      padding: 1rem 2.5rem;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .bottom-bar-brand { font-size: 0.75rem; color: var(--text-tertiary); }
+    .bottom-bar-brand strong { color: var(--text-secondary); }
+
+    /* Floating cards decoration */
+    .panel-card-demo {
+      position: absolute; z-index: 1;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px; padding: 0.875rem 1rem;
+      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    }
+    .demo-card-1 {
+      bottom: 180px; right: -20px; width: 200px;
+      animation: floatCard 5s ease-in-out infinite;
+    }
+    .demo-card-2 {
+      bottom: 100px; right: 60px; width: 170px;
+      animation: floatCard 5s ease-in-out infinite; animation-delay: -2s;
+    }
+    .demo-card-title { font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.8); margin-bottom: 4px; }
+    .demo-card-sub { font-size: 0.6875rem; color: rgba(255,255,255,0.4); }
+    .demo-card-badge {
+      display: inline-block; padding: 1px 6px; border-radius: 99px;
+      background: rgba(255,122,0,0.25); color: var(--accent);
+      font-size: 0.625rem; font-weight: 600; margin-top: 6px;
+    }
+    @keyframes floatCard {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    /* Password strength */
+    .pass-strength { display: flex; gap: 4px; margin-top: 6px; }
+    .strength-bar { flex: 1; height: 3px; border-radius: 99px; background: var(--bg-tertiary); transition: all 0.3s; }
+    .strength-bar.active-1 { background: #E53E3E; }
+    .strength-bar.active-2 { background: #D97706; }
+    .strength-bar.active-3 { background: #059669; }
+
+    @media (max-width: 900px) {
+      .login-panel { display: none; }
+      .login-form-panel { width: 100%; }
+    }
+    @media (max-width: 480px) {
+      .login-form-inner { padding: 2rem 1.5rem; }
+      .login-bottom-bar { padding: 1rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-split">
+
+    <!-- ─── Left Decorative Panel ─── -->
+    <div class="login-panel">
+      <div class="panel-grid"></div>
+      <div class="panel-orb panel-orb-1"></div>
+      <div class="panel-orb panel-orb-2"></div>
+
+      <div class="panel-logo">
+        <div class="panel-logo-icon">C</div>
+        <div class="panel-logo-text">
+          <div class="app-name">ChemSheet</div>
+          <div class="app-sub">KMUTT · ภาควิชาเคมี</div>
+        </div>
+      </div>
+
+      <div class="panel-hero">
+        <h2>คลังชีทเรียน<br /><span>สายรหัส</span><br />ในที่เดียว</h2>
+        <p>รวมเลคเชอร์ ชีทสรุป ข้อสอบเก่า ครบทุกวิชาเคมี<br />จัดระเบียบ ค้นหาง่าย ดาวน์โหลดได้ทันที</p>
+      </div>
+
+      <div class="panel-features">
+        <div class="panel-feature"><div class="panel-feature-dot"></div>Preview PDF ในเบราว์เซอร์ ไม่ต้องดาวน์โหลด</div>
+        <div class="panel-feature"><div class="panel-feature-dot"></div>จัดหมวดหมู่ตามปี วิชา และประเภท</div>
+        <div class="panel-feature"><div class="panel-feature-dot"></div>Bookmark ไฟล์ที่ใช้บ่อย</div>
+        <div class="panel-feature"><div class="panel-feature-dot"></div>Dark Mode รองรับทุกอุปกรณ์</div>
+      </div>
+
+      <!-- Floating demo cards -->
+      <div class="panel-card-demo demo-card-1">
+        <div class="demo-card-title">📄 CHE212 - Organic II</div>
+        <div class="demo-card-sub">Midterm 2566</div>
+        <div class="demo-card-badge">PDF · 2.4 MB</div>
+      </div>
+    </div>
+
+    <!-- ─── Right Form Panel ─── -->
+    <div class="login-form-panel">
+      <div class="login-form-inner">
+
+        <div class="form-header">
+          <h1>ยินดีต้อนรับ 👋</h1>
+          <p>เข้าสู่ระบบเพื่อเข้าถึงคลังชีทเรียน</p>
+        </div>
+
+        <!-- Theme toggle -->
+        <div style="position:absolute; top:1.5rem; right:1.5rem;">
+          <button class="icon-btn theme-toggle-btn" onclick="UI.toggleTheme()" title="สลับธีม"></button>
+        </div>
+
+        <!-- Auth Tabs -->
+        <div class="auth-tabs" role="tablist">
+          <button class="auth-tab active" id="tab-login" role="tab" onclick="switchTab('login')">เข้าสู่ระบบ</button>
+          <button class="auth-tab" id="tab-register" role="tab" onclick="switchTab('register')">สมัครสมาชิก</button>
+        </div>
+
+        <!-- Error Messages -->
+        <div class="error-msg hidden" id="error-msg">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="error-text"></span>
+        </div>
+        <div class="lockout-msg hidden" id="lockout-msg">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span id="lockout-text"></span>
+        </div>
+
+        <!-- ─── Login Form ─── -->
+        <form class="auth-form" id="form-login" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label class="form-label">รหัสนักศึกษา</label>
+            <div class="input-group">
+              <span class="input-prefix">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </span>
+              <input type="text" class="form-input input-has-prefix" id="login-id"
+                placeholder="เช่น 6610501234" maxlength="10"
+                autocomplete="username" inputmode="numeric" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">รหัสผ่าน</label>
+            <div class="input-group">
+              <span class="input-prefix">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </span>
+              <input type="password" class="form-input input-has-prefix" id="login-pass"
+                placeholder="รหัสผ่าน" style="padding-right:2.75rem"
+                autocomplete="current-password" required />
+              <button type="button" class="input-toggle-pass" onclick="togglePass('login-pass', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary submit-btn" id="btn-login">
+            เข้าสู่ระบบ
+          </button>
+        </form>
+
+        <!-- ─── Register Form ─── -->
+        <form class="auth-form hidden" id="form-register" onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label class="form-label">รหัสนักศึกษา</label>
+            <div class="input-group">
+              <span class="input-prefix">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </span>
+              <input type="text" class="form-input input-has-prefix" id="reg-id"
+                placeholder="เช่น 6610501234" maxlength="10" inputmode="numeric" required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ชื่อ-นามสกุล</label>
+            <input type="text" class="form-input" id="reg-name" placeholder="ชื่อจริง นามสกุล" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ชั้นปี</label>
+            <select class="form-select" id="reg-year" required>
+              <option value="">-- เลือกชั้นปี --</option>
+              <option value="1">ปีที่ 1</option>
+              <option value="2">ปีที่ 2</option>
+              <option value="3">ปีที่ 3</option>
+              <option value="4">ปีที่ 4</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">รหัสเชิญ <span style="color:var(--text-tertiary)">(ได้จากรุ่นพี่)</span></label>
+            <div class="input-group">
+              <span class="input-prefix">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </span>
+              <input type="text" class="form-input input-has-prefix" id="reg-invite"
+                placeholder="INVITE-XXXX" autocomplete="off" required />
+            </div>
+            <span class="form-hint">รหัสเชิญใช้ได้ครั้งเดียวสำหรับสมัครสมาชิก</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ตั้งรหัสผ่าน</label>
+            <div class="input-group">
+              <input type="password" class="form-input" id="reg-pass"
+                placeholder="อย่างน้อย 6 ตัวอักษร" style="padding-right:2.75rem"
+                oninput="updatePasswordStrength(this.value)" required />
+              <button type="button" class="input-toggle-pass" onclick="togglePass('reg-pass', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <div class="pass-strength" id="pass-strength">
+              <div class="strength-bar" id="s1"></div>
+              <div class="strength-bar" id="s2"></div>
+              <div class="strength-bar" id="s3"></div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ยืนยันรหัสผ่าน</label>
+            <input type="password" class="form-input" id="reg-pass2" placeholder="ยืนยันรหัสผ่าน" required />
+          </div>
+
+          <button type="submit" class="btn btn-primary submit-btn" id="btn-register">
+            สมัครสมาชิก
+          </button>
+        </form>
+
+        <div class="form-footer">
+          หากมีปัญหาการเข้าใช้งาน ติดต่อรุ่นพี่ผ่านช่องทางภาควิชา
+        </div>
+      </div>
+
+      <div class="login-bottom-bar">
+        <span class="bottom-bar-brand"><strong>ChemSheet</strong> · ภาควิชาเคมี KMUTT</span>
+        <button class="icon-btn theme-toggle-btn" onclick="UI.toggleTheme()"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    // Init
+    UI.initTheme();
+    Auth.redirectIfLoggedIn();
+
+    // Check lockout on load
+    checkLockout();
+    setInterval(checkLockout, 5000);
+
+    function checkLockout() {
+      const lockout = Auth.isLockedOut();
+      const msg = document.getElementById("lockout-msg");
+      if (lockout.locked) {
+        const mins = Math.ceil(lockout.remainingMs / 60000);
+        document.getElementById("lockout-text").textContent = `ล็อกชั่วคราว — ลองใหม่ใน ${mins} นาที`;
+        msg.classList.remove("hidden");
+        document.getElementById("btn-login").disabled = true;
+      } else {
+        msg.classList.add("hidden");
+        document.getElementById("btn-login").disabled = false;
+      }
+    }
+
+    function switchTab(tab) {
+      document.getElementById("tab-login").classList.toggle("active", tab === "login");
+      document.getElementById("tab-register").classList.toggle("active", tab === "register");
+      document.getElementById("form-login").classList.toggle("hidden", tab !== "login");
+      document.getElementById("form-register").classList.toggle("hidden", tab !== "register");
+      hideError();
+    }
+
+    function showError(msg) {
+      document.getElementById("error-text").textContent = msg;
+      document.getElementById("error-msg").classList.remove("hidden");
+    }
+    function hideError() {
+      document.getElementById("error-msg").classList.add("hidden");
+    }
+
+    function togglePass(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const isPass = input.type === "password";
+      input.type = isPass ? "text" : "password";
+      btn.innerHTML = isPass
+        ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+        : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    }
+
+    function updatePasswordStrength(val) {
+      const bars = [document.getElementById("s1"), document.getElementById("s2"), document.getElementById("s3")];
+      bars.forEach(b => { b.className = "strength-bar"; });
+      if (val.length < 1) return;
+      let score = 0;
+      if (val.length >= 6) score++;
+      if (val.length >= 10 && /[A-Z]/.test(val)) score++;
+      if (/[0-9]/.test(val) && /[^a-zA-Z0-9]/.test(val)) score++;
+      for (let i = 0; i < score; i++) bars[i].classList.add(`active-${score}`);
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      hideError();
+      const btn = document.getElementById("btn-login");
+      const id = document.getElementById("login-id").value;
+      const pass = document.getElementById("login-pass").value;
+
+      UI.setButtonLoading(btn, true);
+      const result = await Auth.login(id, pass);
+      UI.setButtonLoading(btn, false);
+
+      if (result.success) {
+        UI.toast("เข้าสู่ระบบสำเร็จ ✓", "success");
+        setTimeout(() => {
+          if (result.session.role === "senior") {
+            window.location.href = "admin.html";
+          } else {
+            window.location.href = "dashboard.html";
+          }
+        }, 600);
+      } else {
+        showError(result.error);
+        document.getElementById("login-id").classList.add("error");
+        setTimeout(() => document.getElementById("login-id").classList.remove("error"), 2000);
+        checkLockout();
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      hideError();
+      const pass = document.getElementById("reg-pass").value;
+      const pass2 = document.getElementById("reg-pass2").value;
+      if (pass !== pass2) { showError("รหัสผ่านไม่ตรงกัน"); return; }
+      if (pass.length < 6) { showError("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร"); return; }
+
+      const btn = document.getElementById("btn-register");
+      UI.setButtonLoading(btn, true);
+
+      const result = await Auth.register({
+        studentId: document.getElementById("reg-id").value,
+        name: document.getElementById("reg-name").value,
+        year: document.getElementById("reg-year").value,
+        password: pass,
+        inviteCode: document.getElementById("reg-invite").value,
+      });
+      UI.setButtonLoading(btn, false);
+
+      if (result.success) {
+        UI.toast("สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ", "success");
+        switchTab("login");
+        document.getElementById("login-id").value = document.getElementById("reg-id").value;
+      } else {
+        showError(result.error || "สมัครสมาชิกไม่สำเร็จ");
+      }
+    }
+  </script>
+</body>
+</html>

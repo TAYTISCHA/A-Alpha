@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="refresh" content="0;url=login.html" />
+  <title>ChemSheet — KMUTT Chemistry</title>
+</head>
+<body>
+  <script>
+    // Redirect to login (or dashboard if already logged in)
+    const s = localStorage.getItem("chemsheet_session");
+    if (s) {
+      try {
+        const session = JSON.parse(s);
+        if (session.expiresAt > Date.now()) {
+          window.location.href = session.role === "senior" ? "admin.html" : "dashboard.html";
+        } else {
+          window.location.href = "login.html";
+        }
+      } catch { window.location.href = "login.html"; }
+    } else {
+      window.location.href = "login.html";
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — ChemSheet KMUTT</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .admin-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: linear-gradient(135deg, var(--accent), #FF4D00);
+      color: white; font-size: 0.625rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 2px 6px; border-radius: 99px;
+    }
+
+    /* Analytics */
+    .analytics-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .analytics-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.125rem;
+      position: relative; overflow: hidden;
+    }
+    .analytics-card::after {
+      content: ''; position: absolute; top: 0; right: 0;
+      width: 60px; height: 60px;
+      background: radial-gradient(circle, var(--accent-soft) 0%, transparent 70%);
+      border-radius: 0 0 0 100%;
+    }
+    .analytics-num { font-size: 2rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
+    .analytics-label { font-size: 0.8125rem; color: var(--text-secondary); margin-top: 4px; }
+    .analytics-trend { font-size: 0.75rem; color: #059669; margin-top: 6px; display: flex; align-items: center; gap: 3px; }
+
+    /* Upload area */
+    .upload-section { margin-bottom: 2rem; }
+    .upload-form { display: flex; flex-direction: column; gap: 1rem; }
+    .upload-path-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .upload-path-row .form-select { flex: 1; min-width: 120px; }
+
+    /* User management */
+    .user-table-wrap { border-radius: var(--radius-lg); border: 1px solid var(--border); overflow: hidden; }
+    .user-actions { display: flex; gap: 0.375rem; }
+
+    /* Password management */
+    .pass-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; }
+    .pass-current-display {
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 1rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .pass-value { font-family: 'IBM Plex Mono', monospace; font-size: 1.125rem; font-weight: 600; color: var(--text-primary); }
+    .pass-expiry { font-size: 0.75rem; color: var(--text-tertiary); }
+    .pass-timer { font-size: 0.875rem; font-weight: 600; color: var(--accent); }
+
+    /* Announcement editor */
+    .announce-editor { display: flex; flex-direction: column; gap: 1rem; }
+
+    /* Sections */
+    .admin-section { display: none; }
+    .admin-section.active { display: block; animation: pageEnter 0.3s ease; }
+
+    /* File manager */
+    .file-manager-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+    .file-row {
+      display: flex; align-items: center; gap: 0.875rem;
+      padding: 0.75rem; border-radius: var(--radius-md);
+      transition: background var(--transition); cursor: default;
+    }
+    .file-row:hover { background: var(--bg-secondary); }
+    .file-row-icon { flex-shrink: 0; color: var(--accent); }
+    .file-row-name { flex: 1; font-size: 0.875rem; font-weight: 500; min-width: 0; word-break: break-word; }
+    .file-row-meta { font-size: 0.75rem; color: var(--text-tertiary); white-space: nowrap; }
+    .file-row-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+    @media (max-width: 600px) {
+      .analytics-row { grid-template-columns: repeat(2, 1fr); }
+      .upload-path-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">C</div>
+        <div class="logo-text">
+          <div class="logo-name">ChemSheet</div>
+          <div class="logo-sub">Admin Panel</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">Admin</div>
+        <a class="nav-item active" href="#" onclick="switchAdmin('overview')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Overview
+        </a>
+        <a class="nav-item" href="#" onclick="switchAdmin('files')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          จัดการไฟล์
+        </a>
+        <a class="nav-item" href="#" onclick="switchAdmin('upload')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          อัปโหลด
+        </a>
+        <a class="nav-item" href="#" onclick="switchAdmin('users')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          ผู้ใช้งาน
+        </a>
+        <a class="nav-item" href="#" onclick="switchAdmin('password')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          รหัสผ่านรุ่นน้อง
+        </a>
+        <a class="nav-item" href="#" onclick="switchAdmin('announce')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3z"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          ประกาศ
+        </a>
+
+        <div class="divider"></div>
+        <a class="nav-item" href="dashboard.html">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          ดูเหมือนรุ่นน้อง
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="profile.html" class="user-card">
+          <div class="user-avatar" id="sidebar-avatar">?</div>
+          <div class="user-info">
+            <div class="user-name" id="sidebar-name">Admin</div>
+            <div class="user-role"><span class="role-dot"></span>Senior</div>
+          </div>
+        </a>
+        <div style="height:0.5rem;"></div>
+        <button class="btn btn-ghost" style="width:100%;font-size:0.8125rem;" onclick="Auth.logout()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          ออกจากระบบ
+        </button>
+      </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="main-content">
+      <header class="navbar">
+        <div class="navbar-left">
+          <button class="icon-btn" id="sidebar-toggle">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="breadcrumb">
+            <span>Admin</span>
+            <span class="breadcrumb-sep">/</span>
+            <span class="breadcrumb-current" id="admin-breadcrumb">Overview</span>
+          </div>
+        </div>
+        <div class="navbar-right">
+          <span class="admin-badge">Senior</span>
+          <button class="icon-btn theme-toggle-btn" onclick="UI.toggleTheme()"></button>
+          <a href="profile.html" class="user-avatar" id="nav-avatar" style="width:32px;height:32px;text-decoration:none;color:var(--accent);font-size:0.75rem;font-weight:700;background:var(--accent-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;">?</a>
+        </div>
+      </header>
+
+      <main class="page-content page-enter">
+
+        <!-- ─── Overview ─── -->
+        <div class="admin-section active" id="sec-overview">
+          <h2 style="margin-bottom:1.5rem;">Overview</h2>
+
+          <div class="analytics-row" id="analytics-row">
+            <div class="analytics-card"><div class="analytics-num" id="stat-users">—</div><div class="analytics-label">ผู้ใช้ทั้งหมด</div></div>
+            <div class="analytics-card"><div class="analytics-num" id="stat-files">—</div><div class="analytics-label">ไฟล์ทั้งหมด</div></div>
+            <div class="analytics-card"><div class="analytics-num" id="stat-today">—</div><div class="analytics-label">เข้าใช้วันนี้</div></div>
+            <div class="analytics-card"><div class="analytics-num" id="stat-downloads">—</div><div class="analytics-label">ดาวน์โหลด</div></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;" id="overview-grid">
+            <div class="card">
+              <h3 style="margin-bottom:1rem;font-size:0.875rem;">ไฟล์ที่เพิ่มล่าสุด</h3>
+              <div id="recent-files-list"><div class="skeleton-line"></div><div class="skeleton-line" style="margin-top:8px;"></div></div>
+            </div>
+            <div class="card">
+              <h3 style="margin-bottom:1rem;font-size:0.875rem;">ผู้ใช้งานล่าสุด</h3>
+              <div id="recent-users-list"><div class="skeleton-line"></div><div class="skeleton-line" style="margin-top:8px;"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── File Manager ─── -->
+        <div class="admin-section" id="sec-files">
+          <h2 style="margin-bottom:1.5rem;">จัดการไฟล์</h2>
+          <div class="file-manager-header">
+            <button class="back-btn" id="files-back-btn" onclick="filesGoBack()" style="display:none;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              ย้อนกลับ
+            </button>
+            <div class="search-wrapper" style="flex:1;max-width:320px;">
+              <span class="search-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+              <input class="search-input" placeholder="ค้นหาไฟล์..." oninput="adminSearchFiles(this.value)" />
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="openCreateFolderModal()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+              โฟลเดอร์ใหม่
+            </button>
+          </div>
+          <div id="admin-files-container">
+            <div class="skeleton-card" style="height:56px;margin-bottom:8px;"></div>
+            <div class="skeleton-card" style="height:56px;margin-bottom:8px;"></div>
+          </div>
+        </div>
+
+        <!-- ─── Upload ─── -->
+        <div class="admin-section" id="sec-upload">
+          <h2 style="margin-bottom:1.5rem;">อัปโหลดไฟล์</h2>
+          <div class="card" style="max-width:600px;">
+            <div class="upload-form">
+              <div class="upload-path-row">
+                <div class="form-group" style="flex:1;">
+                  <label class="form-label">ปี</label>
+                  <select class="form-select" id="up-year">
+                    <option>ปีที่ 1</option><option>ปีที่ 2</option><option>ปีที่ 3</option><option>ปีที่ 4</option>
+                  </select>
+                </div>
+                <div class="form-group" style="flex:2;">
+                  <label class="form-label">วิชา</label>
+                  <input class="form-input" id="up-subject" placeholder="เช่น CHE212" />
+                </div>
+                <div class="form-group" style="flex:1.5;">
+                  <label class="form-label">ประเภท</label>
+                  <select class="form-select" id="up-type">
+                    <option>Lecture</option><option>Lab</option><option>Midterm</option><option>Final</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+                <div class="drop-zone-icon">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <div class="drop-zone-text">คลิกหรือลากไฟล์มาวางที่นี่</div>
+                <div class="drop-zone-hint">รองรับ PDF เท่านั้น ขนาดสูงสุด 50 MB</div>
+              </div>
+              <input type="file" id="file-input" accept="application/pdf" multiple style="display:none;" onchange="handleFileSelect(this.files)" />
+
+              <div id="upload-list"></div>
+
+              <button class="btn btn-primary" id="btn-upload" onclick="startUpload()" style="display:none;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/></svg>
+                อัปโหลด
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── Users ─── -->
+        <div class="admin-section" id="sec-users">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:0.75rem;">
+            <h2>ผู้ใช้งาน</h2>
+            <button class="btn btn-ghost btn-sm" onclick="loadUsers()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.1"/></svg>
+              รีเฟรช
+            </button>
+          </div>
+          <div class="search-wrapper" style="max-width:320px;margin-bottom:1rem;">
+            <span class="search-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+            <input class="search-input" placeholder="ค้นหาผู้ใช้..." oninput="searchUsers(this.value)" />
+          </div>
+          <div class="user-table-wrap">
+            <table id="user-table">
+              <thead><tr>
+                <th>นักศึกษา</th><th>รหัส</th><th>ปี</th><th>เข้าใช้ล่าสุด</th><th>สถานะ</th><th>จัดการ</th>
+              </tr></thead>
+              <tbody id="user-tbody">
+                <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-tertiary);">กำลังโหลด...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ─── Password ─── -->
+        <div class="admin-section" id="sec-password">
+          <h2 style="margin-bottom:1.5rem;">จัดการรหัสผ่านรุ่นน้อง</h2>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;max-width:700px;">
+
+            <div class="pass-section">
+              <h3 style="margin-bottom:1rem;font-size:0.9375rem;">รหัสปัจจุบัน</h3>
+              <div class="pass-current-display">
+                <div>
+                  <div class="pass-value" id="current-pass-display">••••••••</div>
+                  <div class="pass-expiry" id="pass-expiry-text">หมดอายุ: —</div>
+                </div>
+                <button class="icon-btn" onclick="togglePassVisible()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+              <div style="margin-top:0.875rem;">
+                <div class="pass-timer" id="pass-countdown">—</div>
+                <div class="progress-bar" style="margin-top:0.5rem;">
+                  <div class="progress-fill" id="pass-progress" style="width:100%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="pass-section">
+              <h3 style="margin-bottom:1rem;font-size:0.9375rem;">ตั้งรหัสใหม่</h3>
+              <div class="form-group" style="margin-bottom:0.875rem;">
+                <label class="form-label">รหัสผ่านใหม่</label>
+                <input type="text" class="form-input" id="new-junior-pass" placeholder="อย่างน้อย 6 ตัวอักษร" maxlength="30" />
+              </div>
+              <div class="form-group" style="margin-bottom:1rem;">
+                <label class="form-label">หมดอายุใน</label>
+                <select class="form-select" id="pass-expire-hours">
+                  <option value="24">24 ชั่วโมง (ค่าเริ่มต้น)</option>
+                  <option value="12">12 ชั่วโมง</option>
+                  <option value="6">6 ชั่วโมง</option>
+                  <option value="48">48 ชั่วโมง</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" style="width:100%;" onclick="setJuniorPassword()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                ตั้งรหัสผ่าน
+              </button>
+            </div>
+
+            <div class="card" style="grid-column:span 2;">
+              <h3 style="margin-bottom:0.875rem;font-size:0.9375rem;">รหัสเชิญ</h3>
+              <p style="font-size:0.875rem;margin-bottom:1rem;">สร้างรหัสเชิญสำหรับให้รุ่นน้องสมัครสมาชิก รหัสแต่ละอันใช้ได้ครั้งเดียว</p>
+              <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;">
+                <button class="btn btn-ghost btn-sm" onclick="generateInviteCode()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  สร้างรหัสเชิญ
+                </button>
+                <code id="invite-code-display" style="font-family:monospace;font-size:0.875rem;padding:0.375rem 0.75rem;background:var(--bg-secondary);border-radius:6px;border:1px solid var(--border);">—</code>
+                <button class="btn btn-ghost btn-sm" id="copy-invite-btn" onclick="copyInviteCode()" style="display:none;">คัดลอก</button>
+              </div>
+              <div id="invite-list" style="margin-top:1.25rem;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─── Announce ─── -->
+        <div class="admin-section" id="sec-announce">
+          <h2 style="margin-bottom:1.5rem;">ประกาศ</h2>
+          <div class="card" style="max-width:600px;">
+            <div class="announce-editor">
+              <div class="form-group">
+                <label class="form-label">หัวข้อประกาศ</label>
+                <input type="text" class="form-input" id="ann-title" placeholder="เช่น ประกาศเพิ่มไฟล์ Midterm 2567" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">เนื้อหา</label>
+                <textarea class="form-textarea" id="ann-body" rows="4" placeholder="รายละเอียดประกาศ..."></textarea>
+              </div>
+              <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+                <button class="btn btn-primary" onclick="saveAnnouncement()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  บันทึกประกาศ
+                </button>
+                <button class="btn btn-ghost" onclick="clearAnnouncement()">ลบประกาศ</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:1.5rem;max-width:600px;">
+            <h3 style="font-size:0.875rem;margin-bottom:0.875rem;color:var(--text-secondary);">ตัวอย่าง</h3>
+            <div id="ann-preview"></div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/drive.js"></script>
+  <script>
+    const session = Auth.requireAuth(CONFIG.ROLES.SENIOR);
+    if (!session) throw new Error("redirect");
+
+    UI.initTheme();
+    UI.initSidebar();
+
+    const name = session.name || session.studentId;
+    const initials = name.substring(0, 2).toUpperCase();
+    document.getElementById("sidebar-name").textContent = name;
+    document.getElementById("sidebar-avatar").textContent = initials;
+    document.getElementById("nav-avatar").textContent = initials;
+
+    // ─── Section Navigation ─── //
+    function switchAdmin(sec) {
+      document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.sidebar-nav .nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById(`sec-${sec}`).classList.add('active');
+      event.currentTarget.classList.add('active');
+      document.getElementById('admin-breadcrumb').textContent = {
+        overview:'Overview', files:'จัดการไฟล์', upload:'อัปโหลด',
+        users:'ผู้ใช้งาน', password:'รหัสผ่านรุ่นน้อง', announce:'ประกาศ'
+      }[sec];
+      if (sec === 'overview') loadAnalytics();
+      if (sec === 'users') loadUsers();
+      if (sec === 'files') loadAdminFiles([]);
+      if (sec === 'password') loadCurrentPassword();
+    }
+
+    // ─── Analytics ─── //
+    async function loadAnalytics() {
+      try {
+        const res = await Drive.getAnalytics();
+        if (res.success) {
+          document.getElementById("stat-users").textContent = res.totalUsers ?? '—';
+          document.getElementById("stat-files").textContent = res.totalFiles ?? '—';
+          document.getElementById("stat-today").textContent = res.todayVisits ?? '—';
+          document.getElementById("stat-downloads").textContent = res.downloads ?? '—';
+          if (res.recentFiles) {
+            document.getElementById("recent-files-list").innerHTML = res.recentFiles.slice(0,5).map(f =>
+              `<div class="file-row">
+                <div class="file-row-name" style="font-size:0.8125rem;">${f.name}</div>
+                <div class="file-row-meta">${UI.relativeTime(f.createdAt)}</div>
+              </div>`).join('') || '<p style="font-size:0.875rem;color:var(--text-tertiary)">ยังไม่มีไฟล์</p>';
+          }
+          if (res.recentUsers) {
+            document.getElementById("recent-users-list").innerHTML = res.recentUsers.slice(0,5).map(u =>
+              `<div class="file-row">
+                <div class="file-row-name" style="font-size:0.8125rem;">${u.name} (${u.studentId})</div>
+                <div class="file-row-meta">${UI.relativeTime(u.lastLogin)}</div>
+              </div>`).join('') || '<p style="font-size:0.875rem;color:var(--text-tertiary)">ยังไม่มีผู้ใช้</p>';
+          }
+        }
+      } catch {}
+    }
+    loadAnalytics();
+
+    // ─── File Manager ─── //
+    let adminFilePath = [];
+    async function loadAdminFiles(path) {
+      adminFilePath = path;
+      document.getElementById("files-back-btn").style.display = path.length > 0 ? '' : 'none';
+      const container = document.getElementById("admin-files-container");
+      container.innerHTML = '<div class="skeleton-card" style="height:56px;margin-bottom:8px;"></div>'.repeat(3);
+      try {
+        const res = await Drive.listFiles(path.join('/'));
+        if (res.success) {
+          let html = '';
+          (res.subfolders||[]).forEach(f => {
+            html += `<div class="file-row" onclick='loadAdminFiles([...adminFilePath,"${f.name}"])' style="cursor:pointer;border:1px solid var(--border);border-radius:10px;margin-bottom:6px;">
+              <span class="file-row-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" opacity="0.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>
+              <span class="file-row-name">${f.name}</span>
+              <span class="file-row-meta">${f.count ?? ''} ไฟล์</span>
+              <span class="file-row-actions">
+                <button class="icon-btn" onclick='event.stopPropagation();deleteFolder("${f.name}")' title="ลบโฟลเดอร์"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+              </span>
+            </div>`;
+          });
+          (res.files||[]).forEach(f => {
+            html += `<div class="file-row" style="border:1px solid var(--border);border-radius:10px;margin-bottom:6px;">
+              <span class="file-row-icon" style="color:var(--accent);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+              <span class="file-row-name">${f.name}</span>
+              <span class="file-row-meta">${f.size ? (f.size/1024/1024).toFixed(1)+' MB' : ''}</span>
+              <span class="file-row-actions">
+                <button class="icon-btn" onclick='pinFileToggle("${f.id}",${!f.pinned})' title="${f.pinned ? 'เอาออกจากปักหมุด' : 'ปักหมุด'}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="${f.pinned ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M12 2L9 9H2l5.5 4-2 7L12 16l6.5 4-2-7L22 9h-7z"/></svg>
+                </button>
+                <button class="icon-btn" onclick='renameFilePrompt("${f.id}","${f.name.replace(/'/g,"\\'")} ")' title="เปลี่ยนชื่อ"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                <button class="icon-btn" onclick='confirmDeleteFile("${f.id}","${f.name.replace(/'/g,"\\'")} ")' title="ลบ" style="color:#E53E3E"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+              </span>
+            </div>`;
+          });
+          container.innerHTML = html || UI.emptyState("ไม่มีไฟล์ในโฟลเดอร์นี้");
+        }
+      } catch { container.innerHTML = UI.emptyState("เกิดข้อผิดพลาด"); }
+    }
+
+    function filesGoBack() {
+      loadAdminFiles(adminFilePath.slice(0,-1));
+    }
+
+    async function pinFileToggle(id, pinned) {
+      await Drive.pinFile(id, pinned);
+      UI.toast(pinned ? 'ปักหมุดแล้ว' : 'เอาออกจากปักหมุดแล้ว', 'success');
+      loadAdminFiles(adminFilePath);
+    }
+
+    function renameFilePrompt(id, currentName) {
+      UI.showModal({
+        title: 'เปลี่ยนชื่อไฟล์',
+        content: `<div class="form-group"><label class="form-label">ชื่อใหม่</label><input type="text" class="form-input" id="rename-input" value="${currentName}" /></div>`,
+        confirmText: 'บันทึก',
+        onConfirm: async () => {
+          const newName = document.getElementById("rename-input")?.value;
+          if (!newName) return;
+          await Drive.renameFile(id, newName);
+          UI.toast('เปลี่ยนชื่อสำเร็จ', 'success');
+          loadAdminFiles(adminFilePath);
+        }
+      });
+    }
+
+    function confirmDeleteFile(id, name) {
+      UI.showModal({
+        title: 'ลบไฟล์', type: 'danger',
+        content: `<p>คุณต้องการลบ "<strong>${name}</strong>" ใช่ไหม? การกระทำนี้ไม่สามารถย้อนกลับได้</p>`,
+        confirmText: 'ลบ',
+        onConfirm: async () => {
+          await Drive.deleteFile(id);
+          UI.toast('ลบไฟล์สำเร็จ', 'success');
+          loadAdminFiles(adminFilePath);
+        }
+      });
+    }
+
+    function openCreateFolderModal() {
+      UI.showModal({
+        title: 'สร้างโฟลเดอร์ใหม่',
+        content: `<div class="form-group"><label class="form-label">ชื่อโฟลเดอร์</label><input type="text" class="form-input" id="folder-name-input" placeholder="เช่น CHE212" /></div>`,
+        confirmText: 'สร้าง',
+        onConfirm: async () => {
+          const name = document.getElementById("folder-name-input")?.value;
+          if (!name) return;
+          await Drive.createFolder(adminFilePath.join('/'), name);
+          UI.toast('สร้างโฟลเดอร์สำเร็จ', 'success');
+          loadAdminFiles(adminFilePath);
+        }
+      });
+    }
+
+    function adminSearchFiles(q) {
+      // simple client filter
+    }
+
+    // ─── Upload ─── //
+    let pendingFiles = [];
+    const dropZone = document.getElementById("drop-zone");
+    dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
+    dropZone.addEventListener("drop", e => { e.preventDefault(); dropZone.classList.remove("drag-over"); handleFileSelect(e.dataTransfer.files); });
+
+    function handleFileSelect(files) {
+      pendingFiles = Array.from(files).filter(f => f.type === 'application/pdf' && f.size <= CONFIG.MAX_FILE_SIZE_MB * 1024 * 1024);
+      if (pendingFiles.length === 0) { UI.toast('กรุณาเลือกไฟล์ PDF ขนาดไม่เกิน 50 MB', 'warning'); return; }
+      renderUploadList();
+      document.getElementById("btn-upload").style.display = '';
+    }
+
+    function renderUploadList() {
+      document.getElementById("upload-list").innerHTML = pendingFiles.map((f, i) => `
+        <div class="upload-item" id="upload-item-${i}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent);flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+          <div class="upload-info">
+            <div class="upload-name">${f.name}</div>
+            <div class="upload-size">${(f.size/1024/1024).toFixed(2)} MB</div>
+          </div>
+        </div>`).join('');
+    }
+
+    async function startUpload() {
+      const btn = document.getElementById("btn-upload");
+      UI.setButtonLoading(btn, true);
+      const year = document.getElementById("up-year").value;
+      const subject = document.getElementById("up-subject").value.trim();
+      const type = document.getElementById("up-type").value;
+      if (!subject) { UI.toast('กรุณาใส่ชื่อวิชา', 'warning'); UI.setButtonLoading(btn, false); return; }
+
+      for (const file of pendingFiles) {
+        const reader = new FileReader();
+        await new Promise(r => {
+          reader.onload = async () => {
+            try {
+              await Drive.uploadFile({ year, subject, type, fileName: file.name, fileData: reader.result.split(',')[1], mimeType: file.type });
+              UI.toast(`อัปโหลด ${file.name} สำเร็จ`, 'success');
+            } catch { UI.toast(`อัปโหลด ${file.name} ล้มเหลว`, 'error'); }
+            r();
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+      pendingFiles = [];
+      document.getElementById("upload-list").innerHTML = '';
+      btn.style.display = 'none';
+      UI.setButtonLoading(btn, false);
+    }
+
+    // ─── Users ─── //
+    let allUsers = [];
+    async function loadUsers() {
+      const tbody = document.getElementById("user-tbody");
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-tertiary);">กำลังโหลด...</td></tr>';
+      try {
+        const res = await Auth.gasRequest("listUsers", { token: session.token, studentId: session.studentId });
+        if (res.success) {
+          allUsers = res.users || [];
+          renderUserTable(allUsers);
+        }
+      } catch { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-tertiary);">เกิดข้อผิดพลาด</td></tr>'; }
+    }
+
+    function renderUserTable(users) {
+      const tbody = document.getElementById("user-tbody");
+      if (!users.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-tertiary);">ไม่มีผู้ใช้งาน</td></tr>'; return; }
+      tbody.innerHTML = users.map(u => `
+        <tr>
+          <td><strong>${u.name}</strong></td>
+          <td><code>${u.studentId}</code></td>
+          <td>ปีที่ ${u.year}</td>
+          <td>${u.lastLogin ? UI.relativeTime(u.lastLogin) : '—'}</td>
+          <td><span class="badge ${u.active ? 'badge-green' : 'badge-gray'}">${u.active ? 'ใช้งาน' : 'ถูกระงับ'}</span></td>
+          <td>
+            <div class="user-actions">
+              <button class="btn btn-ghost btn-sm" onclick='toggleUserStatus("${u.studentId}",${!u.active})'>${u.active ? 'ระงับ' : 'เปิด'}</button>
+              <button class="btn btn-ghost btn-sm" style="color:#E53E3E;" onclick='confirmDeleteUser("${u.studentId}","${u.name}")'>ลบ</button>
+            </div>
+          </td>
+        </tr>`).join('');
+    }
+
+    function searchUsers(q) {
+      if (!q) { renderUserTable(allUsers); return; }
+      renderUserTable(allUsers.filter(u => u.name.includes(q) || u.studentId.includes(q)));
+    }
+
+    async function toggleUserStatus(studentId, active) {
+      await Auth.gasRequest("updateUser", { token: session.token, studentId: session.studentId, targetId: studentId, active });
+      UI.toast(`${active ? 'เปิด' : 'ระงับ'}การใช้งานแล้ว`, 'success');
+      loadUsers();
+    }
+
+    function confirmDeleteUser(studentId, name) {
+      UI.showModal({
+        title: 'ลบผู้ใช้', type: 'danger',
+        content: `<p>ยืนยันลบ <strong>${name}</strong> (${studentId}) ออกจากระบบ?</p>`,
+        confirmText: 'ลบ',
+        onConfirm: async () => {
+          await Auth.gasRequest("deleteUser", { token: session.token, studentId: session.studentId, targetId: studentId });
+          UI.toast('ลบผู้ใช้สำเร็จ', 'success');
+          loadUsers();
+        }
+      });
+    }
+
+    // ─── Password ─── //
+    let passVisible = false;
+    let passData = null;
+
+    async function loadCurrentPassword() {
+      try {
+        const res = await Auth.gasRequest("getJuniorPassword", { token: session.token, studentId: session.studentId });
+        if (res.success && res.password) {
+          passData = res;
+          updatePassDisplay();
+          startPassCountdown(res.expiresAt);
+        }
+      } catch {}
+    }
+
+    function updatePassDisplay() {
+      if (!passData) return;
+      document.getElementById("current-pass-display").textContent = passVisible ? passData.password : '••••••••';
+      if (passData.expiresAt) {
+        document.getElementById("pass-expiry-text").textContent = 'หมดอายุ: ' + new Date(passData.expiresAt).toLocaleString('th-TH');
+      }
+    }
+
+    function togglePassVisible() { passVisible = !passVisible; updatePassDisplay(); }
+
+    function startPassCountdown(expiresAt) {
+      if (!expiresAt) return;
+      clearInterval(window._passTimer);
+      window._passTimer = setInterval(() => {
+        const remaining = expiresAt - Date.now();
+        if (remaining <= 0) {
+          document.getElementById("pass-countdown").textContent = 'หมดอายุแล้ว';
+          document.getElementById("pass-progress").style.width = '0%';
+          clearInterval(window._passTimer); return;
+        }
+        const hours = Math.floor(remaining / 3600000);
+        const mins = Math.floor((remaining % 3600000) / 60000);
+        document.getElementById("pass-countdown").textContent = `เหลือ ${hours} ชม. ${mins} นาที`;
+        const totalDuration = 24 * 3600 * 1000;
+        document.getElementById("pass-progress").style.width = Math.max(0, (remaining / totalDuration) * 100) + '%';
+      }, 1000);
+    }
+
+    async function setJuniorPassword() {
+      const pass = document.getElementById("new-junior-pass").value.trim();
+      const hours = parseInt(document.getElementById("pass-expire-hours").value);
+      if (!pass || pass.length < 6) { UI.toast('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร', 'warning'); return; }
+      const res = await Auth.gasRequest("setJuniorPassword", { token: session.token, studentId: session.studentId, password: pass, expireHours: hours });
+      if (res.success) {
+        UI.toast('ตั้งรหัสผ่านสำเร็จ', 'success');
+        loadCurrentPassword();
+        document.getElementById("new-junior-pass").value = '';
+      } else UI.toast('เกิดข้อผิดพลาด', 'error');
+    }
+
+    async function generateInviteCode() {
+      const res = await Auth.gasRequest("generateInviteCode", { token: session.token, studentId: session.studentId });
+      if (res.success) {
+        document.getElementById("invite-code-display").textContent = res.code;
+        document.getElementById("copy-invite-btn").style.display = '';
+        UI.toast('สร้างรหัสเชิญสำเร็จ', 'success');
+      }
+    }
+
+    function copyInviteCode() {
+      const code = document.getElementById("invite-code-display").textContent;
+      navigator.clipboard.writeText(code);
+      UI.toast('คัดลอกแล้ว!', 'success');
+    }
+
+    // ─── Announcement ─── //
+    function saveAnnouncement() {
+      const title = document.getElementById("ann-title").value.trim();
+      const body = document.getElementById("ann-body").value.trim();
+      if (!title) { UI.toast('กรุณาใส่หัวข้อ', 'warning'); return; }
+      Auth.gasRequest("setAnnouncement", { token: session.token, studentId: session.studentId, title, body });
+      UI.toast('บันทึกประกาศสำเร็จ', 'success');
+      updateAnnPreview();
+    }
+
+    function clearAnnouncement() {
+      UI.showModal({
+        title: 'ลบประกาศ', type: 'danger',
+        content: '<p>ต้องการลบประกาศใช่ไหม?</p>',
+        confirmText: 'ลบ',
+        onConfirm: () => {
+          Auth.gasRequest("setAnnouncement", { token: session.token, studentId: session.studentId, title: '', body: '' });
+          document.getElementById("ann-title").value = '';
+          document.getElementById("ann-body").value = '';
+          updateAnnPreview();
+          UI.toast('ลบประกาศแล้ว', 'success');
+        }
+      });
+    }
+
+    function updateAnnPreview() {
+      const title = document.getElementById("ann-title").value;
+      const body = document.getElementById("ann-body").value;
+      const preview = document.getElementById("ann-preview");
+      if (!title) { preview.innerHTML = '<p style="color:var(--text-tertiary);font-size:0.875rem;">พิมพ์ข้อความเพื่อดูตัวอย่าง</p>'; return; }
+      preview.innerHTML = `<div class="announcement"><div class="announcement-icon">📢</div><div><div class="announcement-title">${title}</div><div class="announcement-body">${body}</div></div></div>`;
+    }
+
+    document.getElementById("ann-title").addEventListener("input", updateAnnPreview);
+    document.getElementById("ann-body").addEventListener("input", updateAnnPreview);
+    updateAnnPreview();
+  </script>
+</body>
+</html>

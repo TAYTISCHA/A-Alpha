@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — ChemSheet KMUTT</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .pinned-section { margin-bottom: 2rem; }
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .section-title { font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); }
+    .folder-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-size: 0.875rem; color: var(--text-secondary);
+      background: none; border: none; cursor: pointer; font-family: inherit;
+      transition: color var(--transition); padding: 0;
+    }
+    .back-btn:hover { color: var(--text-primary); }
+
+    .view-toggle { display: flex; gap: 4px; }
+    .view-btn {
+      width: 30px; height: 30px; border-radius: 6px;
+      border: 1px solid var(--border); background: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--text-tertiary); transition: all var(--transition);
+    }
+    .view-btn.active, .view-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+
+    .files-list-view .file-card { border-radius: var(--radius-md); padding: 0.75rem 1rem; }
+    .files-list-view .file-grid { display: flex; flex-direction: column; gap: 0.5rem; }
+    .files-list-view .file-card-icon { width: 32px; height: 32px; flex-shrink: 0; margin-bottom: 0; }
+    .files-list-view .file-card { display: flex; align-items: center; gap: 0.875rem; }
+    .files-list-view .file-card-name { margin-bottom: 0; }
+
+    .pdf-viewer-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+      z-index: 2000;
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      padding: 1.5rem;
+    }
+    .pdf-viewer-overlay.open { display: flex; }
+    .pdf-viewer-box {
+      background: var(--surface); border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      width: 100%; max-width: 960px; height: 85vh;
+      display: flex; flex-direction: column;
+      box-shadow: var(--shadow-xl);
+      animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .pdf-viewer-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+    }
+    .pdf-viewer-title { font-size: 0.9375rem; font-weight: 600; color: var(--text-primary); }
+    .pdf-viewer-actions { display: flex; gap: 0.5rem; }
+    .pdf-iframe { flex: 1; width: 100%; border: none; border-radius: 0 0 var(--radius-xl) var(--radius-xl); }
+
+    .recently-row { display: flex; gap: 0.75rem; overflow-x: auto; padding-bottom: 0.5rem; }
+    .recently-row::-webkit-scrollbar { height: 4px; }
+    .recent-chip {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.5rem 0.875rem; border-radius: var(--radius-full);
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      font-size: 0.8125rem; color: var(--text-secondary);
+      white-space: nowrap; cursor: pointer; transition: all var(--transition);
+      flex-shrink: 0;
+    }
+    .recent-chip:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+    .toolbar {
+      display: flex; align-items: center; gap: 0.75rem;
+      margin-bottom: 1.25rem; flex-wrap: wrap;
+    }
+    .toolbar .search-wrapper { flex: 1; min-width: 200px; }
+
+    .cat-section { margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">C</div>
+        <div class="logo-text">
+          <div class="logo-name">ChemSheet</div>
+          <div class="logo-sub">ภาควิชาเคมี KMUTT</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">เมนูหลัก</div>
+        <a class="nav-item active" href="dashboard.html" id="nav-home">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          หน้าหลัก
+        </a>
+        <a class="nav-item" href="#" id="nav-files" onclick="showSection('files')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          ไฟล์ทั้งหมด
+        </a>
+        <a class="nav-item" href="#" onclick="showSection('bookmarks')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          Bookmark
+          <span class="nav-badge" id="bookmark-count">0</span>
+        </a>
+        <a class="nav-item" href="#" onclick="showSection('recent')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          เปิดล่าสุด
+        </a>
+
+        <div class="nav-section-label" style="margin-top:0.5rem">หมวดหมู่</div>
+        <div id="sidebar-tree">
+          <!-- Populated by JS -->
+          <div style="padding:0.5rem;"><div class="skeleton-line skeleton-line-lg"></div></div>
+          <div style="padding:0.5rem;"><div class="skeleton-line skeleton-line-sm"></div></div>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="profile.html" class="user-card">
+          <div class="user-avatar" id="sidebar-avatar">?</div>
+          <div class="user-info">
+            <div class="user-name" id="sidebar-name">กำลังโหลด...</div>
+            <div class="user-role"><span class="role-dot"></span>นักศึกษา</div>
+          </div>
+        </a>
+        <div style="height:0.5rem;"></div>
+        <button class="btn btn-ghost" style="width:100%;font-size:0.8125rem;" onclick="Auth.logout()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          ออกจากระบบ
+        </button>
+      </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- Main -->
+    <div class="main-content">
+
+      <!-- Navbar -->
+      <header class="navbar">
+        <div class="navbar-left">
+          <button class="icon-btn" id="sidebar-toggle">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="breadcrumb" id="breadcrumb">
+            <span>ChemSheet</span>
+            <span class="breadcrumb-sep">/</span>
+            <span class="breadcrumb-current" id="breadcrumb-current">หน้าหลัก</span>
+          </div>
+        </div>
+        <div class="navbar-right">
+          <button class="icon-btn theme-toggle-btn" onclick="UI.toggleTheme()"></button>
+          <a href="profile.html" class="user-avatar" id="nav-avatar" style="width:32px;height:32px;text-decoration:none;color:var(--accent);font-size:0.75rem;font-weight:700;background:var(--accent-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;">?</a>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <main class="page-content page-enter">
+
+        <!-- ─── Home Section ─── -->
+        <section id="section-home">
+          <div style="margin-bottom:1.75rem;">
+            <h1 id="greet-msg">สวัสดีครับ 👋</h1>
+            <p style="margin-top:0.375rem;">ค้นหาชีทที่ต้องการ หรือเลือกจากหมวดหมู่ด้านล่าง</p>
+          </div>
+
+          <!-- Announcement -->
+          <div id="announcement-area" style="margin-bottom:1.75rem;display:none;"></div>
+
+          <!-- Quick search -->
+          <div class="search-wrapper" style="max-width:480px;margin-bottom:1.75rem;">
+            <span class="search-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </span>
+            <input type="text" class="search-input" placeholder="ค้นหาไฟล์..." id="global-search" oninput="handleSearch(this.value)" />
+          </div>
+
+          <!-- Recently viewed -->
+          <div id="recent-section" style="margin-bottom:1.75rem;display:none;">
+            <div class="section-header">
+              <span class="section-title">เปิดล่าสุด</span>
+            </div>
+            <div class="recently-row" id="recent-chips"></div>
+          </div>
+
+          <!-- Pinned -->
+          <div id="pinned-section" style="margin-bottom:1.75rem;display:none;">
+            <div class="section-header">
+              <span class="section-title">📌 ปักหมุด</span>
+            </div>
+            <div class="file-grid" id="pinned-files"></div>
+          </div>
+
+          <!-- Folder Tree -->
+          <div>
+            <div class="section-header">
+              <span class="section-title">หมวดหมู่</span>
+            </div>
+            <div class="folder-list" id="folder-list">
+              <!-- skeleton -->
+              <div class="skeleton-card" style="height:52px;"></div>
+              <div class="skeleton-card" style="height:52px;"></div>
+              <div class="skeleton-card" style="height:52px;"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ─── Files Section ─── -->
+        <section id="section-files" style="display:none;">
+          <div class="toolbar">
+            <button class="back-btn" onclick="goBack()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              ย้อนกลับ
+            </button>
+            <div class="search-wrapper" style="flex:1;max-width:360px;">
+              <span class="search-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+              <input type="text" class="search-input" placeholder="ค้นหาในโฟลเดอร์..." id="file-search" oninput="handleFileSearch(this.value)" />
+            </div>
+            <div class="view-toggle">
+              <button class="view-btn active" id="btn-grid" onclick="setView('grid')" title="Grid">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              </button>
+              <button class="view-btn" id="btn-list" onclick="setView('list')" title="List">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="filter-chips" id="filter-chips" style="margin-bottom:1rem;"></div>
+
+          <div id="file-container">
+            <div class="file-grid" id="file-grid"></div>
+          </div>
+
+          <!-- Pagination -->
+          <div id="pagination" style="display:flex;gap:0.5rem;justify-content:center;margin-top:1.5rem;"></div>
+        </section>
+
+        <!-- ─── Bookmarks Section ─── -->
+        <section id="section-bookmarks" style="display:none;">
+          <h2 style="margin-bottom:1.5rem;">Bookmark</h2>
+          <div class="file-grid" id="bookmark-grid"></div>
+        </section>
+
+        <!-- ─── Recent Section ─── -->
+        <section id="section-recent" style="display:none;">
+          <h2 style="margin-bottom:1.5rem;">เปิดล่าสุด</h2>
+          <div class="file-grid" id="recent-grid"></div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- PDF Viewer -->
+  <div class="pdf-viewer-overlay" id="pdf-overlay" onclick="closePdfIfOutside(event)">
+    <div class="pdf-viewer-box">
+      <div class="pdf-viewer-header">
+        <span class="pdf-viewer-title" id="pdf-title">—</span>
+        <div class="pdf-viewer-actions">
+          <button class="btn btn-ghost btn-sm" id="pdf-download-btn" onclick="downloadCurrentPdf()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            ดาวน์โหลด
+          </button>
+          <button class="icon-btn" onclick="closePdf()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+      <iframe class="pdf-iframe" id="pdf-iframe" src="about:blank"></iframe>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/drive.js"></script>
+  <script>
+    // ─── Auth Guard ───
+    const session = Auth.requireAuth();
+    if (!session) throw new Error("redirect");
+
+    // ─── State ───
+    let currentPath = [];
+    let currentPage = 1;
+    let currentView = 'grid';
+    let currentPdfFile = null;
+    let allFiles = [];
+
+    // ─── Init ───
+    UI.initTheme();
+    UI.initSidebar();
+    initUser();
+    loadDashboard();
+
+    function initUser() {
+      const name = session.name || session.studentId;
+      const initials = name.substring(0, 2).toUpperCase();
+      document.getElementById("sidebar-name").textContent = name;
+      document.getElementById("sidebar-avatar").textContent = initials;
+      document.getElementById("nav-avatar").textContent = initials;
+      const hour = new Date().getHours();
+      const greet = hour < 12 ? "อรุณสวัสดิ์" : hour < 17 ? "สวัสดีตอนบ่าย" : "สวัสดีตอนเย็น";
+      document.getElementById("greet-msg").textContent = `${greet}, ${name} 👋`;
+      updateBookmarkCount();
+    }
+
+    async function loadDashboard() {
+      try {
+        // Load folder tree
+        const res = await Drive.getFolderTree();
+        if (res.success) {
+          renderFolderList(res.folders, document.getElementById("folder-list"), []);
+          renderSidebarTree(res.folders);
+        }
+
+        // Recent viewed
+        const recent = Drive.getRecent();
+        if (recent.length > 0) {
+          document.getElementById("recent-section").style.display = "block";
+          renderRecentChips(recent);
+        }
+
+        // Announcement
+        if (res.announcement) {
+          const area = document.getElementById("announcement-area");
+          area.style.display = "block";
+          area.innerHTML = `<div class="announcement">
+            <div class="announcement-icon">📢</div>
+            <div>
+              <div class="announcement-title">${res.announcement.title || "ประกาศ"}</div>
+              <div class="announcement-body">${res.announcement.body || ""}</div>
+            </div>
+          </div>`;
+        }
+
+        // Pinned files
+        if (res.pinned && res.pinned.length > 0) {
+          document.getElementById("pinned-section").style.display = "block";
+          renderFiles(res.pinned, document.getElementById("pinned-files"));
+        }
+      } catch (err) {
+        UI.toast("เกิดข้อผิดพลาดในการโหลดข้อมูล", "error");
+      }
+    }
+
+    function renderFolderList(folders, container, path) {
+      if (!folders || folders.length === 0) {
+        container.innerHTML = UI.emptyState("ไม่มีโฟลเดอร์");
+        return;
+      }
+      container.innerHTML = folders.map(f => `
+        <div class="folder-card" onclick='navigateTo(${JSON.stringify([...path, f.name])})'>
+          <span class="folder-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" opacity="0.9"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          </span>
+          <span class="folder-name">${f.name}</span>
+          <span class="folder-count">${f.count ?? ''}</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-tertiary)"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>`).join('');
+    }
+
+    function renderSidebarTree(folders) {
+      const tree = document.getElementById("sidebar-tree");
+      if (!folders) { tree.innerHTML = ""; return; }
+      tree.innerHTML = folders.slice(0, 8).map(f => `
+        <a class="nav-item" href="#" onclick='navigateTo(${JSON.stringify([f.name])});return false;'>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          ${f.name}
+        </a>`).join('');
+    }
+
+    async function navigateTo(path) {
+      currentPath = path;
+      currentPage = 1;
+      showSection('files');
+      updateBreadcrumb();
+      loadFiles();
+    }
+
+    async function loadFiles() {
+      const grid = document.getElementById("file-grid");
+      grid.innerHTML = UI.createSkeleton(8);
+      try {
+        const res = await Drive.listFiles(currentPath.join('/'), currentPage);
+        if (res.success) {
+          allFiles = res.files || [];
+          if (res.subfolders && res.subfolders.length > 0) {
+            const folderHtml = res.subfolders.map(f => `
+              <div class="folder-card" onclick='navigateTo([...currentPath, "${f.name}"])'>
+                <span class="folder-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" opacity="0.9"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>
+                <span class="folder-name">${f.name}</span>
+                <span class="folder-count">${f.count ?? ''}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-tertiary)"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>`).join('');
+            grid.innerHTML = `<div class="folder-list" style="margin-bottom:1rem;">${folderHtml}</div>`;
+          } else {
+            grid.innerHTML = '';
+          }
+          renderFiles(allFiles, grid, true);
+          renderPagination(res.total, res.page);
+          renderFilterChips(res.categories);
+        }
+      } catch {
+        grid.innerHTML = UI.emptyState("เกิดข้อผิดพลาด", "กรุณาลองใหม่อีกครั้ง");
+      }
+    }
+
+    function renderFiles(files, container, append = false) {
+      if (!files || files.length === 0) {
+        if (!append) container.innerHTML = UI.emptyState("ไม่มีไฟล์", "ยังไม่มีไฟล์ในโฟลเดอร์นี้");
+        return;
+      }
+      const html = `<div class="file-grid ${currentView === 'list' ? 'files-list-view' : ''}" style="margin-top:0.75rem">` +
+        files.map(f => fileCardHtml(f)).join('') + '</div>';
+      if (append) container.insertAdjacentHTML('beforeend', html);
+      else container.innerHTML = html;
+    }
+
+    function fileCardHtml(f) {
+      const isBookmarked = Drive.isBookmarked(f.id);
+      const sizeStr = f.size ? `${(f.size / 1024 / 1024).toFixed(1)} MB` : '';
+      return `<div class="file-card" onclick='openPdf(${JSON.stringify(f)})'>
+        ${f.pinned ? '<div class="file-card-pin"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L9 9H2l5.5 4-2 7L12 16l6.5 4-2-7L22 9h-7z"/></svg></div>' : ''}
+        <div class="file-card-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <div class="file-card-name">${f.name}</div>
+        <div class="file-card-meta">
+          ${f.date ? `<span>${new Date(f.date).toLocaleDateString('th-TH')}</span>` : ''}
+          ${sizeStr ? `<span>·</span><span>${sizeStr}</span>` : ''}
+        </div>
+        <button class="file-card-bookmark ${isBookmarked ? 'active' : ''}" onclick='event.stopPropagation();toggleBookmark(${JSON.stringify(f)}, this)'>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="${isBookmarked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </button>
+      </div>`;
+    }
+
+    function renderFilterChips(categories) {
+      const container = document.getElementById("filter-chips");
+      if (!categories || categories.length === 0) { container.innerHTML = ''; return; }
+      container.innerHTML = `<button class="chip active" onclick="filterFiles('')">ทั้งหมด</button>` +
+        categories.map(c => `<button class="chip" onclick="filterFiles('${c}')">${c}</button>`).join('');
+    }
+
+    function filterFiles(cat) {
+      document.querySelectorAll("#filter-chips .chip").forEach(c => c.classList.remove('active'));
+      event.target.classList.add('active');
+      const filtered = cat ? allFiles.filter(f => f.category === cat) : allFiles;
+      const grid = document.getElementById("file-grid");
+      grid.querySelectorAll('.file-grid').forEach(g => g.remove());
+      renderFiles(filtered, grid, true);
+    }
+
+    function renderPagination(total, page) {
+      const pages = Math.ceil(total / CONFIG.FILES_PER_PAGE);
+      if (pages <= 1) { document.getElementById("pagination").innerHTML = ''; return; }
+      let html = '';
+      for (let i = 1; i <= pages; i++) {
+        html += `<button class="btn btn-ghost btn-sm ${i === page ? 'btn-primary' : ''}" onclick="goPage(${i})">${i}</button>`;
+      }
+      document.getElementById("pagination").innerHTML = html;
+    }
+
+    function goPage(p) { currentPage = p; loadFiles(); }
+
+    function handleSearch(q) {
+      if (!q) { loadDashboard(); return; }
+      if (q.length < 2) return;
+      clearTimeout(window._searchDebounce);
+      window._searchDebounce = setTimeout(async () => {
+        const res = await Drive.searchFiles(q);
+        if (res.success) {
+          showSection('files');
+          document.getElementById("filter-chips").innerHTML = '';
+          const grid = document.getElementById("file-grid");
+          grid.innerHTML = '';
+          renderFiles(res.files, grid);
+          document.getElementById("breadcrumb-current").textContent = `ผลลัพธ์: "${q}"`;
+        }
+      }, 350);
+    }
+
+    function handleFileSearch(q) {
+      if (!q) { renderFiles(allFiles, document.getElementById("file-grid").querySelector('.file-grid') || document.getElementById("file-grid")); return; }
+      const filtered = allFiles.filter(f => f.name.toLowerCase().includes(q.toLowerCase()));
+      const grid = document.getElementById("file-grid");
+      grid.querySelectorAll('.file-grid').forEach(g => g.remove());
+      renderFiles(filtered, grid, true);
+    }
+
+    function setView(v) {
+      currentView = v;
+      document.getElementById("btn-grid").classList.toggle("active", v === 'grid');
+      document.getElementById("btn-list").classList.toggle("active", v === 'list');
+      loadFiles();
+    }
+
+    function updateBreadcrumb() {
+      document.getElementById("breadcrumb-current").textContent = currentPath[currentPath.length - 1] || "หน้าหลัก";
+    }
+
+    function goBack() {
+      if (currentPath.length === 0) { showSection('home'); return; }
+      currentPath = currentPath.slice(0, -1);
+      if (currentPath.length === 0) { showSection('home'); return; }
+      loadFiles();
+      updateBreadcrumb();
+    }
+
+    function showSection(name) {
+      ['home', 'files', 'bookmarks', 'recent'].forEach(s => {
+        document.getElementById(`section-${s}`).style.display = s === name ? '' : 'none';
+      });
+      if (name === 'bookmarks') renderBookmarks();
+      if (name === 'recent') renderRecentSection();
+      document.getElementById("breadcrumb-current").textContent = {
+        home: 'หน้าหลัก', files: currentPath[currentPath.length - 1] || 'ไฟล์ทั้งหมด',
+        bookmarks: 'Bookmark', recent: 'เปิดล่าสุด',
+      }[name];
+    }
+
+    function renderBookmarks() {
+      const bm = Drive.getBookmarks();
+      const grid = document.getElementById("bookmark-grid");
+      if (!bm.length) { grid.innerHTML = UI.emptyState("ยังไม่มี Bookmark", "กด ⭐ ที่ไฟล์ใดก็ได้เพื่อ bookmark"); return; }
+      renderFiles(bm.map(b => ({ id: b.id, name: b.name, path: b.path })), grid);
+    }
+
+    function renderRecentSection() {
+      const rec = Drive.getRecent();
+      const grid = document.getElementById("recent-grid");
+      if (!rec.length) { grid.innerHTML = UI.emptyState("ยังไม่มีประวัติ", "เปิดไฟล์แรกของคุณ"); return; }
+      renderFiles(rec.map(r => ({ id: r.id, name: r.name, path: r.path })), grid);
+    }
+
+    function renderRecentChips(recent) {
+      document.getElementById("recent-chips").innerHTML = recent.slice(0, 8).map(r =>
+        `<div class="recent-chip" onclick='openPdf(${JSON.stringify(r)})'>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+          ${r.name}
+        </div>`).join('');
+    }
+
+    function toggleBookmark(file, btn) {
+      const added = Drive.toggleBookmark(file);
+      btn.classList.toggle('active', added);
+      btn.querySelector('svg').setAttribute('fill', added ? 'currentColor' : 'none');
+      UI.toast(added ? 'เพิ่ม Bookmark แล้ว' : 'ลบ Bookmark แล้ว', 'success');
+      updateBookmarkCount();
+    }
+
+    function updateBookmarkCount() {
+      const count = Drive.getBookmarks().length;
+      document.getElementById("bookmark-count").textContent = count;
+    }
+
+    async function openPdf(file) {
+      currentPdfFile = file;
+      Drive.addRecent(file);
+      document.getElementById("pdf-title").textContent = file.name;
+      document.getElementById("pdf-overlay").classList.add("open");
+      document.getElementById("pdf-iframe").src = "about:blank";
+      try {
+        const res = await Drive.getPreviewUrl(file.id);
+        if (res.success) {
+          document.getElementById("pdf-iframe").src = res.url;
+        } else {
+          UI.toast("ไม่สามารถโหลด PDF ได้", "error");
+          closePdf();
+        }
+      } catch {
+        UI.toast("เกิดข้อผิดพลาด", "error");
+        closePdf();
+      }
+    }
+
+    function closePdf() {
+      document.getElementById("pdf-overlay").classList.remove("open");
+      document.getElementById("pdf-iframe").src = "about:blank";
+      currentPdfFile = null;
+    }
+
+    function closePdfIfOutside(e) {
+      if (e.target === document.getElementById("pdf-overlay")) closePdf();
+    }
+
+    async function downloadCurrentPdf() {
+      if (!currentPdfFile) return;
+      const btn = document.getElementById("pdf-download-btn");
+      UI.setButtonLoading(btn, true);
+      try {
+        const res = await Drive.getDownloadUrl(currentPdfFile.id);
+        if (res.success) {
+          const a = document.createElement('a');
+          a.href = res.url; a.download = currentPdfFile.name; a.target = '_blank';
+          a.click();
+        } else UI.toast("ดาวน์โหลดไม่สำเร็จ", "error");
+      } catch { UI.toast("เกิดข้อผิดพลาด", "error"); }
+      UI.setButtonLoading(btn, false);
+    }
+
+    // Close PDF on Escape
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closePdf(); });
+  </script>
+</body>
+</html>

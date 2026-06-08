@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile — ChemSheet KMUTT</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .profile-hero {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 2rem;
+      display: flex; align-items: flex-start; gap: 1.75rem;
+      margin-bottom: 1.5rem;
+      position: relative; overflow: hidden;
+    }
+    .profile-hero::before {
+      content: '';
+      position: absolute; top: 0; right: 0;
+      width: 200px; height: 120px;
+      background: radial-gradient(ellipse, var(--accent-soft) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .avatar-section { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+    .avatar-large {
+      width: 96px; height: 96px; border-radius: 50%;
+      background: var(--accent-soft); color: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; font-weight: 700;
+      border: 3px solid var(--border);
+      overflow: hidden; cursor: pointer; position: relative;
+      transition: all var(--transition);
+    }
+    .avatar-large img { width: 100%; height: 100%; object-fit: cover; }
+    .avatar-large:hover .avatar-overlay { opacity: 1; }
+    .avatar-overlay {
+      position: absolute; inset: 0; border-radius: 50%;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity var(--transition);
+      color: white;
+    }
+    .avatar-hint { font-size: 0.75rem; color: var(--text-tertiary); text-align: center; }
+
+    .profile-info { flex: 1; min-width: 0; }
+    .profile-name { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem; }
+    .profile-id { font-size: 0.875rem; color: var(--text-tertiary); font-family: 'IBM Plex Mono', monospace; margin-bottom: 0.75rem; }
+    .profile-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    .info-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.25rem;
+    }
+    .info-card-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-tertiary); margin-bottom: 0.5rem; }
+    .info-card-value { font-size: 1.125rem; font-weight: 600; color: var(--text-primary); }
+
+    .edit-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; }
+    .edit-form h3 { margin-bottom: 1.25rem; font-size: 0.9375rem; }
+
+    .pass-change-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; }
+
+    .activity-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .activity-item {
+      display: flex; align-items: center; gap: 0.875rem;
+      padding: 0.75rem; border-radius: var(--radius-md);
+      background: var(--bg-secondary);
+    }
+    .activity-icon { color: var(--accent); flex-shrink: 0; }
+    .activity-name { font-size: 0.875rem; font-weight: 500; flex: 1; }
+    .activity-time { font-size: 0.75rem; color: var(--text-tertiary); white-space: nowrap; }
+
+    @media (max-width: 640px) {
+      .profile-hero { flex-direction: column; align-items: center; text-align: center; }
+      .profile-meta { justify-content: center; }
+      .info-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">C</div>
+        <div class="logo-text">
+          <div class="logo-name">ChemSheet</div>
+          <div class="logo-sub">ภาควิชาเคมี KMUTT</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a class="nav-item" id="back-btn" href="dashboard.html">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          กลับหน้าหลัก
+        </a>
+        <a class="nav-item active" href="profile.html">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          โปรไฟล์
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="profile.html" class="user-card">
+          <div class="user-avatar" id="sidebar-avatar">?</div>
+          <div class="user-info">
+            <div class="user-name" id="sidebar-name">—</div>
+            <div class="user-role"><span class="role-dot"></span><span id="sidebar-role">นักศึกษา</span></div>
+          </div>
+        </a>
+      </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="main-content">
+      <header class="navbar">
+        <div class="navbar-left">
+          <button class="icon-btn" id="sidebar-toggle">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div class="breadcrumb">
+            <span>ChemSheet</span>
+            <span class="breadcrumb-sep">/</span>
+            <span class="breadcrumb-current">โปรไฟล์</span>
+          </div>
+        </div>
+        <div class="navbar-right">
+          <button class="icon-btn theme-toggle-btn" onclick="UI.toggleTheme()"></button>
+        </div>
+      </header>
+
+      <main class="page-content page-enter">
+        <h2 style="margin-bottom:1.5rem;">โปรไฟล์ของฉัน</h2>
+
+        <!-- Hero -->
+        <div class="profile-hero">
+          <div class="avatar-section">
+            <div class="avatar-large" id="avatar-display" onclick="triggerAvatarUpload()">
+              <span id="avatar-initials">?</span>
+              <div class="avatar-overlay">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+              </div>
+            </div>
+            <span class="avatar-hint">คลิกเพื่อเปลี่ยนรูป</span>
+            <input type="file" id="avatar-input" accept="image/*" style="display:none;" onchange="handleAvatarUpload(this)" />
+          </div>
+
+          <div class="profile-info">
+            <div class="profile-name" id="profile-name">กำลังโหลด...</div>
+            <div class="profile-id" id="profile-id">—</div>
+            <div class="profile-meta" id="profile-meta">
+              <span class="badge badge-orange" id="profile-role">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="info-grid" id="info-grid">
+          <div class="info-card">
+            <div class="info-card-label">ชั้นปี</div>
+            <div class="info-card-value" id="info-year">—</div>
+          </div>
+          <div class="info-card">
+            <div class="info-card-label">สมัครเมื่อ</div>
+            <div class="info-card-value" id="info-joined">—</div>
+          </div>
+          <div class="info-card">
+            <div class="info-card-label">Bookmark</div>
+            <div class="info-card-value" id="info-bookmarks">0 ไฟล์</div>
+          </div>
+          <div class="info-card">
+            <div class="info-card-label">เข้าใช้ล่าสุด</div>
+            <div class="info-card-value" id="info-lastlogin">—</div>
+          </div>
+        </div>
+
+        <!-- Edit Info -->
+        <div class="edit-form">
+          <h3>แก้ไขข้อมูล</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+            <div class="form-group">
+              <label class="form-label">ชื่อ-นามสกุล</label>
+              <input type="text" class="form-input" id="edit-name" placeholder="ชื่อจริง นามสกุล" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">ชั้นปี</label>
+              <select class="form-select" id="edit-year">
+                <option value="1">ปีที่ 1</option>
+                <option value="2">ปีที่ 2</option>
+                <option value="3">ปีที่ 3</option>
+                <option value="4">ปีที่ 4</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveProfile()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            บันทึก
+          </button>
+        </div>
+
+        <!-- Change Password -->
+        <div class="pass-change-form" style="margin-bottom:1.5rem;">
+          <h3 style="margin-bottom:1.25rem;font-size:0.9375rem;">เปลี่ยนรหัสผ่าน</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem;">
+            <div class="form-group">
+              <label class="form-label">รหัสผ่านปัจจุบัน</label>
+              <input type="password" class="form-input" id="cur-pass" placeholder="••••••••" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">รหัสผ่านใหม่</label>
+              <input type="password" class="form-input" id="new-pass" placeholder="อย่างน้อย 6 ตัว" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">ยืนยันรหัสผ่าน</label>
+              <input type="password" class="form-input" id="new-pass2" placeholder="••••••••" />
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="changePassword()">เปลี่ยนรหัสผ่าน</button>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card">
+          <h3 style="margin-bottom:1rem;font-size:0.875rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);">เปิดล่าสุด</h3>
+          <div id="activity-list" class="activity-list">
+            <p style="color:var(--text-tertiary);font-size:0.875rem;">ยังไม่มีประวัติ</p>
+          </div>
+        </div>
+
+        <!-- Danger zone -->
+        <div style="margin-top:1.5rem;padding:1.25rem;border:1px solid rgba(229,62,62,0.2);border-radius:var(--radius-lg);background:rgba(229,62,62,0.03);">
+          <h3 style="font-size:0.875rem;color:#E53E3E;margin-bottom:0.5rem;">Danger Zone</h3>
+          <p style="font-size:0.8125rem;color:var(--text-secondary);margin-bottom:1rem;">ออกจากระบบทุกอุปกรณ์ และล้าง session ทั้งหมด</p>
+          <button class="btn btn-danger btn-sm" onclick="Auth.logout()">ออกจากระบบ</button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/drive.js"></script>
+  <script>
+    const session = Auth.requireAuth();
+    if (!session) throw new Error("redirect");
+
+    UI.initTheme();
+    UI.initSidebar();
+
+    // Adjust back button for senior
+    if (session.role === CONFIG.ROLES.SENIOR) {
+      document.getElementById("back-btn").href = "admin.html";
+      document.getElementById("sidebar-role").textContent = "Senior (Admin)";
+    }
+
+    // Load profile
+    async function initProfile() {
+      const name = session.name || session.studentId;
+      const initials = name.substring(0, 2).toUpperCase();
+
+      document.getElementById("profile-name").textContent = name;
+      document.getElementById("profile-id").textContent = session.studentId;
+      document.getElementById("profile-role").textContent = session.role === 'senior' ? 'Senior' : 'Junior';
+      document.getElementById("sidebar-name").textContent = name;
+      document.getElementById("sidebar-avatar").textContent = initials;
+
+      document.getElementById("edit-name").value = name;
+
+      // Info cards
+      document.getElementById("info-bookmarks").textContent = Drive.getBookmarks().length + ' ไฟล์';
+      document.getElementById("info-lastlogin").textContent = new Date(session.loginAt).toLocaleDateString('th-TH');
+
+      // Initials / avatar
+      const savedAvatar = localStorage.getItem('chemsheet_avatar_' + session.studentId);
+      if (savedAvatar) {
+        setAvatarImage(savedAvatar);
+      } else {
+        document.getElementById("avatar-initials").textContent = initials;
+      }
+
+      // Load full profile from GAS
+      try {
+        const res = await Auth.gasRequest("getProfile", { token: session.token, studentId: session.studentId });
+        if (res.success && res.profile) {
+          const p = res.profile;
+          document.getElementById("info-year").textContent = `ปีที่ ${p.year || '—'}`;
+          document.getElementById("edit-year").value = p.year || '1';
+          if (p.joinedAt) {
+            document.getElementById("info-joined").textContent = new Date(p.joinedAt).toLocaleDateString('th-TH');
+          }
+          if (p.avatarUrl) setAvatarImage(p.avatarUrl);
+        }
+      } catch {}
+
+      // Recent activity
+      const recent = Drive.getRecent();
+      if (recent.length) {
+        document.getElementById("activity-list").innerHTML = recent.slice(0, 8).map(r => `
+          <div class="activity-item">
+            <span class="activity-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+            </span>
+            <span class="activity-name">${r.name}</span>
+            <span class="activity-time">${UI.relativeTime(r.viewedAt)}</span>
+          </div>`).join('');
+      }
+    }
+
+    function setAvatarImage(src) {
+      const display = document.getElementById("avatar-display");
+      display.innerHTML = `<img src="${src}" alt="avatar" /><div class="avatar-overlay"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
+      document.getElementById("sidebar-avatar").innerHTML = `<img src="${src}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+    }
+
+    function triggerAvatarUpload() {
+      document.getElementById("avatar-input").click();
+    }
+
+    function handleAvatarUpload(input) {
+      const file = input.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { UI.toast('กรุณาเลือกไฟล์รูปภาพ', 'warning'); return; }
+      if (file.size > 5 * 1024 * 1024) { UI.toast('รูปภาพต้องมีขนาดไม่เกิน 5 MB', 'warning'); return; }
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const dataUrl = e.target.result;
+        setAvatarImage(dataUrl);
+        // Save locally
+        localStorage.setItem('chemsheet_avatar_' + session.studentId, dataUrl);
+        // Upload to GAS (optional, base64 encoded)
+        try {
+          await Auth.gasRequest("updateAvatar", {
+            token: session.token, studentId: session.studentId,
+            imageData: dataUrl.split(',')[1], mimeType: file.type
+          });
+          UI.toast('อัปโหลดรูปโปรไฟล์สำเร็จ ✓', 'success');
+        } catch {
+          UI.toast('บันทึกรูปแล้ว (เฉพาะเครื่องนี้)', 'info');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function saveProfile() {
+      const name = document.getElementById("edit-name").value.trim();
+      const year = document.getElementById("edit-year").value;
+      if (!name) { UI.toast('กรุณาใส่ชื่อ', 'warning'); return; }
+
+      try {
+        const res = await Auth.gasRequest("updateProfile", { token: session.token, studentId: session.studentId, name, year });
+        if (res.success) {
+          document.getElementById("profile-name").textContent = name;
+          document.getElementById("sidebar-name").textContent = name;
+          UI.toast('บันทึกข้อมูลสำเร็จ', 'success');
+        } else { UI.toast('เกิดข้อผิดพลาด', 'error'); }
+      } catch { UI.toast('เกิดข้อผิดพลาด', 'error'); }
+    }
+
+    async function changePassword() {
+      const cur = document.getElementById("cur-pass").value;
+      const newP = document.getElementById("new-pass").value;
+      const newP2 = document.getElementById("new-pass2").value;
+      if (!cur || !newP || !newP2) { UI.toast('กรุณากรอกข้อมูลให้ครบ', 'warning'); return; }
+      if (newP !== newP2) { UI.toast('รหัสผ่านใหม่ไม่ตรงกัน', 'error'); return; }
+      if (newP.length < 6) { UI.toast('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร', 'warning'); return; }
+
+      try {
+        const res = await Auth.gasRequest("changePassword", { token: session.token, studentId: session.studentId, currentPassword: cur, newPassword: newP });
+        if (res.success) {
+          UI.toast('เปลี่ยนรหัสผ่านสำเร็จ', 'success');
+          document.getElementById("cur-pass").value = '';
+          document.getElementById("new-pass").value = '';
+          document.getElementById("new-pass2").value = '';
+        } else { UI.toast(res.error || 'รหัสผ่านปัจจุบันไม่ถูกต้อง', 'error'); }
+      } catch { UI.toast('เกิดข้อผิดพลาด', 'error'); }
+    }
+
+    initProfile();
+  </script>
+</body>
+</html>
