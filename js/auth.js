@@ -116,7 +116,7 @@ const Auth = (() => {
 
   function _validateStudentId(id) {
     // KMUTT student ID format: 2 digit year + 2 digit faculty + 5 digits = 9 chars e.g. 6610501234
-    return /^\d{9,10}$/.test(id);
+    return /^\d{9,11}$/.test(id);
   }
 
   // ─── Login ───────────────────────────────────────────────────────────────
