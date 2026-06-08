@@ -9,7 +9,7 @@ const CONFIG = {
   UNIVERSITY: "KMUTT | ภาควิชาเคมี",
 
   // Google Apps Script Web App URL — ใส่ URL จาก GAS deployment
-  GAS_URL: "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec",
+  GAS_URL: "https://script.google.com/macros/s/AKfycbz1nJ_1ESA8erlaoz63J-Q3nsn2vx6udavKa2vSBbZdMnjLxnNRKcUqQI4LVte1HleC/exec",
 
   // Session settings
   SESSION_KEY: "chemsheet_session",
