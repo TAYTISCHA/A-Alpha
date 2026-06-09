@@ -369,11 +369,11 @@
     </div>
   </div>
 
-  <script src="js/config.js"></script>
-  <script src="js/ui.js"></script>
+<script src="js/config.js"></script>
+  <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/drive.js"></script>
-  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
   <script>
     const session = Auth.requireAuth(CONFIG.ROLES.SENIOR);
     if (!session) throw new Error("redirect");
@@ -388,15 +388,29 @@
     document.getElementById("nav-avatar").textContent = initials;
 
     // ─── Section Navigation ─── //
-    function switchAdmin(sec) {
+    function switchAdmin(sec, ev) {
       document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
       document.querySelectorAll('.sidebar-nav .nav-item').forEach(n => n.classList.remove('active'));
-      document.getElementById(`sec-${sec}`).classList.add('active');
-      event.currentTarget.classList.add('active');
-      document.getElementById('admin-breadcrumb').textContent = {
-        overview:'Overview', files:'จัดการไฟล์', upload:'อัปโหลด',
-        users:'ผู้ใช้งาน', password:'รหัสผ่านรุ่นน้อง', announce:'ประกาศ'
-      }[sec];
+      
+      const secElement = document.getElementById(`sec-${sec}`);
+      if (secElement) secElement.classList.add('active');
+      
+      // ป้องกัน Error กรณีไม่ได้ส่ง event เข้ามา
+      if (ev && ev.currentTarget) {
+        ev.currentTarget.classList.add('active');
+      } else {
+        const fallbackBtn = document.querySelector(`.sidebar-nav .nav-item[onclick*="${sec}"]`);
+        if (fallbackBtn) fallbackBtn.classList.add('active');
+      }
+
+      const breadcrumb = document.getElementById('admin-breadcrumb');
+      if (breadcrumb) {
+        breadcrumb.textContent = {
+          overview:'Overview', files:'จัดการไฟล์', upload:'อัปโหลด',
+          users:'ผู้ใช้งาน', password:'รหัสผ่านรุ่นน้อง', announce:'ประกาศ'
+        }[sec] || sec;
+      }
+
       if (sec === 'overview') loadAnalytics();
       if (sec === 'users') loadUsers();
       if (sec === 'files') loadAdminFiles([]);
@@ -427,7 +441,9 @@
               </div>`).join('') || '<p style="font-size:0.875rem;color:var(--text-tertiary)">ยังไม่มีผู้ใช้</p>';
           }
         }
-      } catch {}
+      } catch (err) {
+        console.error("Analytics Error:", err);
+      }
     }
     loadAnalytics();
 
@@ -468,7 +484,10 @@
           });
           container.innerHTML = html || UI.emptyState("ไม่มีไฟล์ในโฟลเดอร์นี้");
         }
-      } catch { container.innerHTML = UI.emptyState("เกิดข้อผิดพลาด"); }
+      } catch (err) { 
+        console.error("Load Admin Files Error:", err);
+        container.innerHTML = UI.emptyState("เกิดข้อผิดพลาดในการโหลดไฟล์"); 
+      }
     }
 
     function filesGoBack() {
@@ -484,7 +503,7 @@
     function renameFilePrompt(id, currentName) {
       UI.showModal({
         title: 'เปลี่ยนชื่อไฟล์',
-        content: `<div class="form-group"><label class="form-label">ชื่อใหม่</label><input type="text" class="form-input" id="rename-input" value="${currentName}" /></div>`,
+        content: `<div class="form-group"><label class="form-label">ชื่อใหม่</label><input type="text" class="form-input" id="rename-input" value="${currentName.trim()}" /></div>`,
         confirmText: 'บันทึก',
         onConfirm: async () => {
           const newName = document.getElementById("rename-input")?.value;
@@ -499,13 +518,23 @@
     function confirmDeleteFile(id, name) {
       UI.showModal({
         title: 'ลบไฟล์', type: 'danger',
-        content: `<p>คุณต้องการลบ "<strong>${name}</strong>" ใช่ไหม? การกระทำนี้ไม่สามารถย้อนกลับได้</p>`,
+        content: `<p>คุณต้องการลบ "<strong>${name.trim()}</strong>" ใช่ไหม? การกระทำนี้ไม่สามารถย้อนกลับได้</p>`,
         confirmText: 'ลบ',
         onConfirm: async () => {
           await Drive.deleteFile(id);
           UI.toast('ลบไฟล์สำเร็จ', 'success');
           loadAdminFiles(adminFilePath);
         }
+      });
+    }
+
+    // ป้องกันแอดมินกดแล้ว Error (ต้องเชื่อม API ลบโฟลเดอร์ฝั่ง GAS ก่อน)
+    function deleteFolder(name) {
+      UI.showModal({
+        title: 'ลบโฟลเดอร์', type: 'danger',
+        content: `<p>ระบบกำลังพัฒนาระบบลบโฟลเดอร์ "<strong>${name}</strong>" (ปัจจุบันรองรับเฉพาะการลบไฟล์เท่านั้น)</p>`,
+        confirmText: 'ตกลง',
+        onConfirm: () => {}
       });
     }
 
@@ -524,20 +553,18 @@
       });
     }
 
-    function adminSearchFiles(q) {
-      // simple client filter
-    }
-
     // ─── Upload ─── //
     let pendingFiles = [];
     const dropZone = document.getElementById("drop-zone");
-    dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
-    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
-    dropZone.addEventListener("drop", e => { e.preventDefault(); dropZone.classList.remove("drag-over"); handleFileSelect(e.dataTransfer.files); });
+    if(dropZone) {
+      dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
+      dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
+      dropZone.addEventListener("drop", e => { e.preventDefault(); dropZone.classList.remove("drag-over"); handleFileSelect(e.dataTransfer.files); });
+    }
 
     function handleFileSelect(files) {
       pendingFiles = Array.from(files).filter(f => f.type === 'application/pdf' && f.size <= CONFIG.MAX_FILE_SIZE_MB * 1024 * 1024);
-      if (pendingFiles.length === 0) { UI.toast('กรุณาเลือกไฟล์ PDF ขนาดไม่เกิน 50 MB', 'warning'); return; }
+      if (pendingFiles.length === 0) { UI.toast(`กรุณาเลือกไฟล์ PDF ขนาดไม่เกิน ${CONFIG.MAX_FILE_SIZE_MB} MB`, 'warning'); return; }
       renderUploadList();
       document.getElementById("btn-upload").style.display = '';
     }
@@ -559,6 +586,7 @@
       const year = document.getElementById("up-year").value;
       const subject = document.getElementById("up-subject").value.trim();
       const type = document.getElementById("up-type").value;
+      
       if (!subject) { UI.toast('กรุณาใส่ชื่อวิชา', 'warning'); UI.setButtonLoading(btn, false); return; }
 
       for (const file of pendingFiles) {
@@ -566,14 +594,20 @@
         await new Promise(r => {
           reader.onload = async () => {
             try {
-              await Drive.uploadFile({ year, subject, type, fileName: file.name, fileData: reader.result.split(',')[1], mimeType: file.type });
+              // ดึงเฉพาะส่วน String Base64 หลังเครื่องหมาย comma
+              const base64Data = reader.result.split(',')[1]; 
+              await Drive.uploadFile({ year, subject, type, fileName: file.name, fileData: base64Data, mimeType: file.type });
               UI.toast(`อัปโหลด ${file.name} สำเร็จ`, 'success');
-            } catch { UI.toast(`อัปโหลด ${file.name} ล้มเหลว`, 'error'); }
+            } catch (err) { 
+              UI.toast(`อัปโหลด ${file.name} ล้มเหลว`, 'error'); 
+              console.error(err);
+            }
             r();
           };
           reader.readAsDataURL(file);
         });
       }
+      
       pendingFiles = [];
       document.getElementById("upload-list").innerHTML = '';
       btn.style.display = 'none';
@@ -733,15 +767,19 @@
     }
 
     function updateAnnPreview() {
-      const title = document.getElementById("ann-title").value;
-      const body = document.getElementById("ann-body").value;
+      const title = document.getElementById("ann-title")?.value;
+      const body = document.getElementById("ann-body")?.value;
       const preview = document.getElementById("ann-preview");
+      if(!preview) return;
+      
       if (!title) { preview.innerHTML = '<p style="color:var(--text-tertiary);font-size:0.875rem;">พิมพ์ข้อความเพื่อดูตัวอย่าง</p>'; return; }
       preview.innerHTML = `<div class="announcement"><div class="announcement-icon">📢</div><div><div class="announcement-title">${title}</div><div class="announcement-body">${body}</div></div></div>`;
     }
 
-    document.getElementById("ann-title").addEventListener("input", updateAnnPreview);
-    document.getElementById("ann-body").addEventListener("input", updateAnnPreview);
+    const annTitleInput = document.getElementById("ann-title");
+    const annBodyInput = document.getElementById("ann-body");
+    if(annTitleInput) annTitleInput.addEventListener("input", updateAnnPreview);
+    if(annBodyInput) annBodyInput.addEventListener("input", updateAnnPreview);
     updateAnnPreview();
   </script>
 </body>
