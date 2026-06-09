@@ -250,13 +250,19 @@ const Auth = (() => {
   // ─── GAS Request Helper ──────────────────────────────────────────────────
 
   async function _gasRequest(action, payload = {}) {
-    const url = new URL(CONFIG.GAS_URL);
-    url.searchParams.set("action", action);
+    // เอา action มารวมไว้ใน payload แทนการต่อท้าย URL (?action=...)
+    const finalPayload = {
+      action: action,
+      ...payload
+    };
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(CONFIG.GAS_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      redirect: "follow", // บังคับให้ตาม Redirect เพื่อป้องกัน CORS error จาก GAS
+      headers: { 
+        "Content-Type": "text/plain;charset=utf-8" // ใช้ text/plain เพื่อข้าม Preflight (OPTIONS request)
+      },
+      body: JSON.stringify(finalPayload),
     });
 
     if (!response.ok) throw new Error("Network error: " + response.status);
