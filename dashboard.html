@@ -278,13 +278,10 @@
       <iframe class="pdf-iframe" id="pdf-iframe" src="about:blank"></iframe>
     </div>
   </div>
-
-  <!-- Scripts -->
-  <script src="js/api.js"></script>
-  <script src="js/config.js"></script>
-  <script src="js/ui.js"></script>
+<script src="js/config.js"></script> <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/drive.js"></script>
+  <script src="js/ui.js"></script>
   <script>
     // ─── Auth Guard ───
     const session = Auth.requireAuth();
@@ -350,6 +347,7 @@
           renderFiles(res.pinned, document.getElementById("pinned-files"));
         }
       } catch (err) {
+        console.error(err);
         UI.toast("เกิดข้อผิดพลาดในการโหลดข้อมูล", "error");
       }
     }
@@ -395,6 +393,9 @@
         const res = await Drive.listFiles(currentPath.join('/'), currentPage);
         if (res.success) {
           allFiles = res.files || [];
+          grid.innerHTML = ''; // ล้าง Skeleton ออกก่อน
+
+          // แสดงโฟลเดอร์ย่อย (ถ้ามี)
           if (res.subfolders && res.subfolders.length > 0) {
             const folderHtml = res.subfolders.map(f => `
               <div class="folder-card" onclick='navigateTo([...currentPath, "${f.name}"])'>
@@ -404,14 +405,17 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-tertiary)"><polyline points="9 18 15 12 9 6"/></svg>
               </div>`).join('');
             grid.innerHTML = `<div class="folder-list" style="margin-bottom:1rem;">${folderHtml}</div>`;
-          } else {
-            grid.innerHTML = '';
           }
+          
+          // เรนเดอร์ไฟล์ต่อท้ายโครงสร้างโฟลเดอร์ย่อย
           renderFiles(allFiles, grid, true);
           renderPagination(res.total, res.page);
           renderFilterChips(res.categories);
+        } else {
+          grid.innerHTML = UI.emptyState("เกิดข้อผิดพลาด", res.error || "ไม่สามารถดึงข้อมูลได้");
         }
-      } catch {
+      } catch (err) {
+        console.error(err);
         grid.innerHTML = UI.emptyState("เกิดข้อผิดพลาด", "กรุณาลองใหม่อีกครั้ง");
       }
     }
@@ -423,6 +427,7 @@
       }
       const html = `<div class="file-grid ${currentView === 'list' ? 'files-list-view' : ''}" style="margin-top:0.75rem">` +
         files.map(f => fileCardHtml(f)).join('') + '</div>';
+      
       if (append) container.insertAdjacentHTML('beforeend', html);
       else container.innerHTML = html;
     }
@@ -449,15 +454,18 @@
     function renderFilterChips(categories) {
       const container = document.getElementById("filter-chips");
       if (!categories || categories.length === 0) { container.innerHTML = ''; return; }
-      container.innerHTML = `<button class="chip active" onclick="filterFiles('')">ทั้งหมด</button>` +
-        categories.map(c => `<button class="chip" onclick="filterFiles('${c}')">${c}</button>`).join('');
+      container.innerHTML = `<button class="chip active" onclick="filterFiles('', event)">ทั้งหมด</button>` +
+        categories.map(c => `<button class="chip" onclick="filterFiles('${c}', event)">${c}</button>`).join('');
     }
 
-    function filterFiles(cat) {
+    function filterFiles(cat, event) {
       document.querySelectorAll("#filter-chips .chip").forEach(c => c.classList.remove('active'));
-      event.target.classList.add('active');
+      if (event && event.target) event.target.classList.add('active');
+      
       const filtered = cat ? allFiles.filter(f => f.category === cat) : allFiles;
       const grid = document.getElementById("file-grid");
+      
+      // ล้างเฉพาะคลาส .file-grid เก่าออกเพื่อไม่ให้ไปลบโครงสร้างโฟลเดอร์ย่อย
       grid.querySelectorAll('.file-grid').forEach(g => g.remove());
       renderFiles(filtered, grid, true);
     }
@@ -492,9 +500,13 @@
     }
 
     function handleFileSearch(q) {
-      if (!q) { renderFiles(allFiles, document.getElementById("file-grid").querySelector('.file-grid') || document.getElementById("file-grid")); return; }
-      const filtered = allFiles.filter(f => f.name.toLowerCase().includes(q.toLowerCase()));
       const grid = document.getElementById("file-grid");
+      if (!q) { 
+        grid.querySelectorAll('.file-grid').forEach(g => g.remove());
+        renderFiles(allFiles, grid, true); 
+        return; 
+      }
+      const filtered = allFiles.filter(f => f.name.toLowerCase().includes(q.toLowerCase()));
       grid.querySelectorAll('.file-grid').forEach(g => g.remove());
       renderFiles(filtered, grid, true);
     }
@@ -520,20 +532,26 @@
 
     function showSection(name) {
       ['home', 'files', 'bookmarks', 'recent'].forEach(s => {
-        document.getElementById(`section-${s}`).style.display = s === name ? '' : 'none';
+        const el = document.getElementById(`section-${s}`);
+        if (el) el.style.display = s === name ? '' : 'none';
       });
       if (name === 'bookmarks') renderBookmarks();
       if (name === 'recent') renderRecentSection();
-      document.getElementById("breadcrumb-current").textContent = {
+      
+      const currentLabel = {
         home: 'หน้าหลัก', files: currentPath[currentPath.length - 1] || 'ไฟล์ทั้งหมด',
         bookmarks: 'Bookmark', recent: 'เปิดล่าสุด',
       }[name];
+      
+      const breadcrumbEl = document.getElementById("breadcrumb-current");
+      if (breadcrumbEl) breadcrumbEl.textContent = currentLabel;
     }
 
     function renderBookmarks() {
       const bm = Drive.getBookmarks();
       const grid = document.getElementById("bookmark-grid");
       if (!bm.length) { grid.innerHTML = UI.emptyState("ยังไม่มี Bookmark", "กด ⭐ ที่ไฟล์ใดก็ได้เพื่อ bookmark"); return; }
+      grid.innerHTML = '';
       renderFiles(bm.map(b => ({ id: b.id, name: b.name, path: b.path })), grid);
     }
 
@@ -541,6 +559,7 @@
       const rec = Drive.getRecent();
       const grid = document.getElementById("recent-grid");
       if (!rec.length) { grid.innerHTML = UI.emptyState("ยังไม่มีประวัติ", "เปิดไฟล์แรกของคุณ"); return; }
+      grid.innerHTML = '';
       renderFiles(rec.map(r => ({ id: r.id, name: r.name, path: r.path })), grid);
     }
 
