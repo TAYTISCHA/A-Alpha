@@ -8,7 +8,7 @@ const CONFIG = {
   APP_SUBTITLE: "คลังชีทเรียนสายรหัส",
   UNIVERSITY: "KMUTT | ภาควิชาเคมี",
 
-  // Google Apps Script Web App URL — ใส่ URL จาก GAS deployment
+  // Google Apps Script Web App URL
   GAS_URL: "https://script.google.com/macros/s/AKfycbzRfqlM_eJfD15XpPDh0Dc3pqPLw3WNcMBhy7yQIkJTZeIRRunOosICsqf623ry8XCS/exec",
 
   // Session settings
@@ -60,10 +60,7 @@ const CONFIG = {
 function getDeviceId() {
   let id = localStorage.getItem(CONFIG.STORAGE_KEYS.DEVICE_ID);
   if (!id) {
-    id =
-      "dev_" +
-      Date.now().toString(36) +
-      Math.random().toString(36).substring(2, 10);
+    id = "dev_" + Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
     localStorage.setItem(CONFIG.STORAGE_KEYS.DEVICE_ID, id);
   }
   return id;
